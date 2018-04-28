@@ -42,7 +42,7 @@ file(GLOB LIB_HEADER_FILES
 file(GLOB LIB_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/*.cpp
     )
-add_library(${PROJECT_LIB_NAME} ${LIB_HEADER_FILES} ${LIB_SRC_FILES})
+add_library(${PROJECT_NAME_STR} ${LIB_HEADER_FILES} ${LIB_SRC_FILES})
 
 
 #-------------------
@@ -57,7 +57,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 
 file(GLOB TEST_SRC_FILES ${PROJECT_SOURCE_DIR}/test/*.cpp)
 add_executable(${PROJECT_TEST_NAME} ${TEST_SRC_FILES})
-add_dependencies(${PROJECT_TEST_NAME} ${PROJECT_LIB_NAME} googletest)
+add_dependencies(${PROJECT_TEST_NAME} ${PROJECT_NAME_STR} googletest)
 
 
 if(WIN32 OR XCODE)
@@ -82,6 +82,6 @@ else()
 endif()
 
 message("common library:::${COMMON_LIBRARY}")
-target_link_libraries(${PROJECT_TEST_NAME} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_LIB_NAME})
+target_link_libraries(${PROJECT_TEST_NAME} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_NAME_STR})
 
 add_test(test1 ${PROJECT_TEST_NAME})
