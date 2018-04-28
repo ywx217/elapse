@@ -1,0 +1,9 @@
+!/build/init.bat
+/build
+/cmake-build-*
+/.idea
+/.vscode
+/.idea
+/cmake-build-debug
+/cmake-build-release
+/compile_commands.json
