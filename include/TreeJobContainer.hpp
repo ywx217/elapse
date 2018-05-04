@@ -27,8 +27,16 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
+#if !defined(NDEBUG)
+#define BOOST_MULTI_INDEX_ENABLE_INVARIANT_CHECKING
+#define BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
+#endif
+
 #include <set>
 #include <unordered_map>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 #include "Job.hpp"
 #include "JobContainer.hpp"
 
@@ -38,18 +46,47 @@ namespace elapse {
 // set + map vs boost::mic
 // http://david-grs.github.io/why_boost_multi_index_container-part1/
 
+/* tags for accessing the corresponding indices of JobSet */
+struct id {};
+struct expire {};
+
+/* see Compiler specifics: Use of member_offset for info on
+* BOOST_MULTI_INDEX_MEMBER
+*/
+
+/* Define a multi_index_container of JobSet with following indices:
+*   - a unique index sorted by Job::id_,
+*   - a non-unique index sorted by Job::expired_,
+*/
+
+typedef boost::multi_index_container<
+	Job,
+	boost::multi_index::indexed_by<
+		boost::multi_index::ordered_unique<
+			boost::multi_index::tag<id>, BOOST_MULTI_INDEX_MEMBER(Job, JobId, id_)>,
+		boost::multi_index::ordered_non_unique<
+			boost::multi_index::tag<expire>, BOOST_MULTI_INDEX_MEMBER(Job, TimeUnit, expire_)> >
+> JobSet;
+
 // a job container based on heap
 class TreeJobContainer : public JobContainer {
 public:
 	TreeJobContainer() {}
 	virtual ~TreeJobContainer() {}
 
-	virtual void Add(TimeUnit expireTime, JobId handle);
+	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb);
 	virtual bool Remove(JobId handle);
 	virtual std::vector<JobId> PopExpires(TimeUnit now);
 
 protected:
+	template <class Tag, class Key>
+	inline JobSet::iterator Find(Key const& key) {
+		return boost::multi_index::get<Tag>(jobs_).find(key);
+	}
+
+protected:
 	JobId nextId_;
+	JobSet jobs_;
 };
 
 } // namespace elapse

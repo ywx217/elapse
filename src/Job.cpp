@@ -35,18 +35,12 @@ bool Job::IsExpired(TimeUnit now) const {
 	return expire_ >= now;
 }
 
-void Job::Fire() {
-	if (fired_) {
-		return;
-	}
-	cb_();
-	fired_ = true;
-}
-
-bool Job::AutoFire(TimeUnit now) {
+bool Job::AutoFire(TimeUnit now) const {
 	if (IsExpired(now)) {
-		Fire();
+		cb_();
+		return true;
 	}
+	return false;
 }
 
 } // namespace elapse

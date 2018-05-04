@@ -41,7 +41,7 @@ public:
 	virtual ~JobContainer() {}
 
 	// add a handle to be called later
-	virtual void Add(TimeUnit expireTime, JobId handle) = 0;
+	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb) = 0;
 	// returns false if handle not found, otherwise true
 	virtual bool Remove(JobId handle) = 0;
 	// removes all expired handles and return them, according to the given time.

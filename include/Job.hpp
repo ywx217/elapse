@@ -37,19 +37,18 @@ public:
 	Job(JobId id, TimeUnit expire, ExpireCallback const& cb) :
 		id_(id),
 		expire_(expire),
-		cb_(cb),
-		fired_(false) {}
+		cb_(cb) {}
 	virtual ~Job() {}
 
 	bool IsExpired(TimeUnit now) const;
-	void Fire();
-	bool AutoFire(TimeUnit now);
+	bool AutoFire(TimeUnit now) const;
 
-private:
+public:
 	JobId id_;
 	TimeUnit expire_;
+
+private:
 	ExpireCallback cb_;
-	bool fired_;
 };
 
 } // namespace elapse

@@ -30,4 +30,35 @@ For more information, please refer to <http://unlicense.org>
 
 
 namespace elapse {
+
+JobId TreeJobContainer::Add(TimeUnit expireTime, ExpireCallback const& cb) {
+	JobId id = nextId_++;
+	jobs_.emplace(id, expireTime, cb);
+	return id;
+}
+
+bool TreeJobContainer::Remove(JobId handle) {
+	auto it = Find<id>(handle);
+	if (it == jobs_.end()) {
+		return false;
+	}
+	jobs_.erase(it);
+	return true;
+}
+
+std::vector<JobId> TreeJobContainer::PopExpires(TimeUnit now) {
+	std::vector<JobId> expiredJobs;
+	auto& index = boost::multi_index::get<expire>(jobs_);
+	auto eraseTo = std::find_if(index.begin(), index.end(), [&expiredJobs, now](Job const& job) {
+		// iterate expire time in ascending order
+		if (job.AutoFire(now)) {
+			expiredJobs.push_back(job.id_);
+			return false;
+		}
+		return true;
+	});
+	index.erase(index.begin(), eraseTo);
+	return expiredJobs;
+}
+
 } // namespace elapse
