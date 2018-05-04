@@ -32,12 +32,12 @@ For more information, please refer to <http://unlicense.org>
 namespace elapse {
 
 bool Job::IsExpired(TimeUnit now) const {
-	return expire_ >= now;
+	return expire_ <= now;
 }
 
 bool Job::AutoFire(TimeUnit now) const {
 	if (IsExpired(now)) {
-		cb_();
+		cb_(id_);
 		return true;
 	}
 	return false;

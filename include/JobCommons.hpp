@@ -36,6 +36,6 @@ namespace elapse {
 
 typedef std::uint64_t TimeUnit;
 typedef std::uint64_t JobId;
-typedef std::function<void()> ExpireCallback;
+typedef std::function<void(JobId)> ExpireCallback;
 
 } // namespace elapse
