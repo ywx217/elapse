@@ -29,23 +29,13 @@ For more information, please refer to <http://unlicense.org>
 */
 #include <cstdint>
 #include <vector>
-#include "JobCommons.hpp"
+#include <functional>
 
 
 namespace elapse {
 
-// interface
-class JobContainer {
-public:
-	JobContainer() {}
-	virtual ~JobContainer() {}
-
-	// add a handle to be called later
-	virtual void Add(TimeUnit expireTime, JobId handle) = 0;
-	// returns false if handle not found, otherwise true
-	virtual bool Remove(JobId handle) = 0;
-	// removes all expired handles and return them, according to the given time.
-	virtual std::vector<JobId> PopExpires(TimeUnit now) = 0;
-};
+typedef std::uint64_t TimeUnit;
+typedef std::uint64_t JobId;
+typedef std::function<void()> ExpireCallback;
 
 } // namespace elapse

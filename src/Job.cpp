@@ -1,4 +1,3 @@
-#pragma once
 /*
 Author: ywx217@gmail.com
 
@@ -27,23 +26,27 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include "JobContainer.hpp"
+#include "Job.hpp"
 
 
 namespace elapse {
 
-// a job container based on heap
-class HeapJobContainer : public JobContainer {
-public:
-	HeapJobContainer() {}
-	virtual ~HeapJobContainer() {}
+bool Job::IsExpired(TimeUnit now) const {
+	return expire_ >= now;
+}
 
-	virtual void Add(TimeUnit expireTime, Handler handle);
-	virtual bool Remove(Handler handle);
-	virtual std::vector<Handler> PopExpires(TimeUnit now);
+void Job::Fire() {
+	if (fired_) {
+		return;
+	}
+	cb_();
+	fired_ = true;
+}
 
-protected:
-	
-};
+bool Job::AutoFire(TimeUnit now) {
+	if (IsExpired(now)) {
+		Fire();
+	}
+}
 
 } // namespace elapse

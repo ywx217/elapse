@@ -1,4 +1,3 @@
-#pragma once
 /*
 Author: ywx217@gmail.com
 
@@ -27,25 +26,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include <cstdint>
-#include <vector>
-#include "JobCommons.hpp"
+#include "TreeJobContainer.hpp"
 
 
 namespace elapse {
-
-// interface
-class JobContainer {
-public:
-	JobContainer() {}
-	virtual ~JobContainer() {}
-
-	// add a handle to be called later
-	virtual void Add(TimeUnit expireTime, JobId handle) = 0;
-	// returns false if handle not found, otherwise true
-	virtual bool Remove(JobId handle) = 0;
-	// removes all expired handles and return them, according to the given time.
-	virtual std::vector<JobId> PopExpires(TimeUnit now) = 0;
-};
-
 } // namespace elapse

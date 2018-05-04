@@ -27,25 +27,29 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include <cstdint>
-#include <vector>
 #include "JobCommons.hpp"
 
 
 namespace elapse {
 
-// interface
-class JobContainer {
+class Job {
 public:
-	JobContainer() {}
-	virtual ~JobContainer() {}
+	Job(JobId id, TimeUnit expire, ExpireCallback const& cb) :
+		id_(id),
+		expire_(expire),
+		cb_(cb),
+		fired_(false) {}
+	virtual ~Job() {}
 
-	// add a handle to be called later
-	virtual void Add(TimeUnit expireTime, JobId handle) = 0;
-	// returns false if handle not found, otherwise true
-	virtual bool Remove(JobId handle) = 0;
-	// removes all expired handles and return them, according to the given time.
-	virtual std::vector<JobId> PopExpires(TimeUnit now) = 0;
+	bool IsExpired(TimeUnit now) const;
+	void Fire();
+	bool AutoFire(TimeUnit now);
+
+private:
+	JobId id_;
+	TimeUnit expire_;
+	ExpireCallback cb_;
+	bool fired_;
 };
 
 } // namespace elapse

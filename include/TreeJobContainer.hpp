@@ -1,3 +1,4 @@
+#pragma once
 /*
 Author: ywx217@gmail.com
 
@@ -26,8 +27,29 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include "HeapJobContainer.hpp"
+#include <set>
+#include <unordered_map>
+#include "Job.hpp"
+#include "JobContainer.hpp"
 
 
 namespace elapse {
+
+// set + map vs boost::mic
+// http://david-grs.github.io/why_boost_multi_index_container-part1/
+
+// a job container based on heap
+class TreeJobContainer : public JobContainer {
+public:
+	TreeJobContainer() {}
+	virtual ~TreeJobContainer() {}
+
+	virtual void Add(TimeUnit expireTime, JobId handle);
+	virtual bool Remove(JobId handle);
+	virtual std::vector<JobId> PopExpires(TimeUnit now);
+
+protected:
+	JobId nextId_;
+};
+
 } // namespace elapse
