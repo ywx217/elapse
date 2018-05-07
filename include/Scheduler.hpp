@@ -32,6 +32,8 @@ For more information, please refer to <http://unlicense.org>
 #include <memory>
 #include "JobCommons.hpp"
 #include "JobContainer.hpp"
+#include "Clock.hpp"
+#include "Crontab.hpp"
 
 
 namespace elapse {
@@ -47,6 +49,16 @@ public:
 	Scheduler(JobContainer* containerPtr) : container_(containerPtr) {}
 	Scheduler(std::unique_ptr<JobContainer>&& containerPtr) : container_(containerPtr) {}
 	virtual ~Scheduler() {}
+
+	void Advance(TimeOffset delta) {
+		clock_.Advance(delta);
+	}
+
+	// bookkeeping all scheduled jobs
+	void Tick() {
+		auto now = clock_.Now();
+		container_->PopExpires(now);
+	}
 
 	// schedule a new call with delay
 	void Schedule(Key const& alias, TimeUnit expireTime, ExpireCallback const& cb) {
@@ -68,6 +80,26 @@ public:
 		return true;
 	}
 
+	// --------------------------------------------------
+	// enhanced schedule methods
+	// --------------------------------------------------
+	void ScheduleWithDelay(Key const& alias, TimeUnit delay, ExpireCallback const& cb) {
+		Schedule(alias, clock_.Now() + delay, cb);
+	}
+
+	void ScheduleAt(Key const& alias, size_t hour, size_t minute, size_t second, ExpireCallback const& cb) {
+		crontab::Crontab cron;
+		cron.Parse(hour, minute, second);
+		auto expire = clock_.NowTimeT();
+		if (!cron.FindNext(expire)) {
+			return;
+		}
+		Schedule(alias, ToTimeUnit(expire), cb);
+	}
+
+	void ScheduleContab(Key const& alias, std::string const& contab, ExpireCallback const& cb) {
+	}
+
 protected:
 	bool OnTriggered(Key const& alias, JobId id) {
 		auto it = jobs_.find(alias);
@@ -79,6 +111,7 @@ protected:
 	}
 
 protected:
+	Clock clock_;
 	map_type jobs_;
 	std::unique_ptr<JobContainer> container_;
 };
