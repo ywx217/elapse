@@ -59,6 +59,7 @@ struct expire {};
 *   - a non-unique index sorted by Job::expired_,
 */
 
+
 typedef boost::multi_index_container<
 	Job,
 	boost::multi_index::indexed_by<
@@ -76,6 +77,7 @@ public:
 
 	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb);
 	virtual bool Remove(JobId handle);
+	virtual void RemoveAll();
 	virtual std::vector<JobId> PopExpires(TimeUnit now);
 
 protected:

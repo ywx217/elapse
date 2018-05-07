@@ -46,6 +46,10 @@ bool TreeJobContainer::Remove(JobId handle) {
 	return true;
 }
 
+void TreeJobContainer::RemoveAll() {
+	jobs_.clear();
+}
+
 std::vector<JobId> TreeJobContainer::PopExpires(TimeUnit now) {
 	std::vector<JobId> expiredJobs;
 	auto& index = boost::multi_index::get<expire>(jobs_);

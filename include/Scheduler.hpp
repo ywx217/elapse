@@ -27,27 +27,60 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include <cstdint>
-#include <vector>
+#include <functional>
+#include <unordered_map>
+#include <memory>
 #include "JobCommons.hpp"
+#include "JobContainer.hpp"
 
 
 namespace elapse {
 
-// interface
-class JobContainer {
+// timer scheduler for more convenient uses.
+template <class Key, class Hash=std::hash<Key>>
+class Scheduler {
 public:
-	JobContainer() {}
-	virtual ~JobContainer() {}
+	typedef Key key_type;
+	typedef std::unordered_map<Key, JobId, Hash> map_type;
 
-	// add a handle to be called later
-	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb) = 0;
-	// returns false if handle not found, otherwise true
-	virtual bool Remove(JobId handle) = 0;
-	// cancel all callbacks
-	virtual void RemoveAll() = 0;
-	// removes all expired handles and return them, according to the given time.
-	virtual std::vector<JobId> PopExpires(TimeUnit now) = 0;
+public:
+	Scheduler(JobContainer* containerPtr) : container_(containerPtr) {}
+	Scheduler(std::unique_ptr<JobContainer>&& containerPtr) : container_(containerPtr) {}
+	virtual ~Scheduler() {}
+
+	// schedule a new call with delay
+	void Schedule(Key const& alias, TimeUnit expireTime, ExpireCallback const& cb) {
+		Cancel(alias);
+		auto id = container_->Add(expireTime, [cb, alias, this](JobId id) {
+			this->OnTriggered(alias, id);
+			cb(id);
+		});
+		jobs_[alias] = id;
+	}
+	// cancel a call
+	bool Cancel(Key const& alias) {
+		auto it = jobs_.find(alias);
+		if (it == jobs_.end()) {
+			return false;
+		}
+		container_->Remove(it->second);
+		jobs_.erase(it);
+		return true;
+	}
+
+protected:
+	bool OnTriggered(Key const& alias, JobId id) {
+		auto it = jobs_.find(alias);
+		if (it != jobs_.end()) {
+			jobs_.erase(it);
+			return true;
+		}
+		return false;
+	}
+
+protected:
+	map_type jobs_;
+	std::unique_ptr<JobContainer> container_;
 };
 
 } // namespace elapse
