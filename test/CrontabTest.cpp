@@ -39,9 +39,11 @@ TEST(Crontab, EveryMinute) {
 	cron.Parse(0, 0, 0);
 	cron.Hour().SetFitsAll();
 	cron.Minute().SetFitsAll();
+	cron.Second().SetSingle(30);
 
-	AssertFindNext(cron, MakeTime(2018, 5, 7, 17, 20, 0), MakeTime(2018, 5, 7, 17, 21, 0));
-	AssertFindNext(cron, MakeTime(2018, 5, 31, 23, 59, 10), MakeTime(2018, 6, 1, 0, 0, 0));
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 17, 20, 0), MakeTime(2018, 5, 7, 17, 20, 30));
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 17, 20, 30), MakeTime(2018, 5, 7, 17, 21, 0));
+	AssertFindNext(cron, MakeTime(2018, 5, 31, 23, 59, 31), MakeTime(2018, 6, 1, 0, 0, 0));
 	AssertFindNext(cron, MakeTime(2018, 12, 31, 23, 59, 59), MakeTime(2019, 1, 1, 0, 0, 0));
 	AssertFindNext(cron, MakeTime(2019, 2, 28, 23, 59, 59), MakeTime(2019, 3, 1, 0, 0, 0));
 }
