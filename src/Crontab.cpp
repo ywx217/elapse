@@ -28,6 +28,7 @@ For more information, please refer to <http://unlicense.org>
 */
 #include "Crontab.hpp"
 #include <memory>
+#include "Clock.hpp"
 
 
 namespace elapse {
@@ -39,6 +40,14 @@ inline void TimeNormalize(std::tm& tm) {
 	if (p) {
 		tm = *p;
 	}
+}
+
+TimeUnit Crontab::NextExpire(Clock const& clock) {
+	auto expire = clock.NowTimeT();
+	if (!FindNext(expire, 1)) {
+		return 0;
+	}
+	return ToTimeUnit(expire);
 }
 
 bool Crontab::FindNext(std::time_t& timestamp, int offset) const {

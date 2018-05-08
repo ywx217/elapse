@@ -30,9 +30,14 @@ For more information, please refer to <http://unlicense.org>
 #include <cstdint>
 #include <bitset>
 #include <ctime>
+#include <memory>
+#include "JobCommons.hpp"
 
 
 namespace elapse {
+
+class Clock;
+
 namespace crontab {
 
 template <std::size_t Bits, std::size_t BaseOffset = 0>
@@ -112,7 +117,16 @@ typedef Field<7> DayOfWeekField;
 typedef Field<130, 1970> YearField;
 
 
-class Crontab {
+class IRepeatable {
+public:
+	// finds next repeat timestamp in-place
+	virtual TimeUnit NextExpire(Clock const& clock) = 0;
+};
+
+typedef std::shared_ptr<IRepeatable> RepeatablePtr;
+
+
+class Crontab : public IRepeatable {
 public:
 	Crontab() {}
 	virtual ~Crontab() {}
@@ -132,6 +146,7 @@ public:
 	YearField& Year() { return year_; }
 	YearField const& Year()const { return year_; }
 
+	TimeUnit NextExpire(Clock const& clock) override;
 	bool FindNext(std::time_t& timestamp, int offset = 1) const;
 
 	void Parse(size_t hour, size_t minute, size_t second);
@@ -147,6 +162,8 @@ protected:
 	MonthField month_;
 	YearField year_;
 };
+
+typedef std::shared_ptr<Crontab> CrontabPtr;
 
 } // namespace crontab
 } // namespace elapse
