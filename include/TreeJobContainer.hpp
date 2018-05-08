@@ -37,6 +37,7 @@ For more information, please refer to <http://unlicense.org>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
 #include "Job.hpp"
 #include "JobContainer.hpp"
 
@@ -63,7 +64,7 @@ struct expire {};
 typedef boost::multi_index_container<
 	Job,
 	boost::multi_index::indexed_by<
-		boost::multi_index::ordered_unique<
+		boost::multi_index::hashed_unique<
 			boost::multi_index::tag<id>, BOOST_MULTI_INDEX_MEMBER(Job, JobId, id_)>,
 		boost::multi_index::ordered_non_unique<
 			boost::multi_index::tag<expire>, BOOST_MULTI_INDEX_MEMBER(Job, TimeUnit, expire_)> >
