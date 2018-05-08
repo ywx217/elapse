@@ -1,6 +1,9 @@
 #include "gtest/gtest.h"
 #include <list>
 #include "TreeJobContainer.hpp"
+#ifdef BENCHMARK_JOB_CONTAINERS
+#include "AsioJobContainer.hpp"
+#endif
 
 using namespace elapse;
 #define TIME_BEGIN 1525436318156L
@@ -46,3 +49,25 @@ TEST(TreeContainer, Remove) {
 	ASSERT_TRUE(ctn.Remove(id_4));
 	ASSERT_EQ(0, ctn.PopExpires(1000));
 }
+
+
+#ifdef BENCHMARK_ASIO_JOB_CONTAINER
+TEST(Scheduler, BenchTreeJobContainer) {
+	TreeJobContainer ctn;
+	ExpireCallback cb = [](JobId id) {};
+
+	for (int i = 0; i < 1000000; ++i) {
+		ctn.Add(i, cb);
+	}
+}
+
+
+TEST(Scheduler, BenchAsioJobContainer) {
+	AsioJobContainer ctn;
+	ExpireCallback cb = [](JobId id) {};
+
+	for (int i = 0; i < 1000000; ++i) {
+		ctn.Add(i, cb);
+	}
+}
+#endif
