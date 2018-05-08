@@ -46,13 +46,55 @@ TEST(Crontab, EveryMinute) {
 	AssertFindNext(cron, MakeTime(2019, 2, 28, 23, 59, 59), MakeTime(2019, 3, 1, 0, 0, 0));
 }
 
+TEST(Crontab, EverySecond) {
+	Crontab cron;
+	cron.Parse(12, 0, 0);
+	cron.Second().SetFitsAll();
+	cron.Minute().SetFitsAll();
+
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 11, 20, 0), MakeTime(2018, 5, 7, 12, 0, 0));
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 11, 20, 30), MakeTime(2018, 5, 7, 12, 0, 0));
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 12, 59, 59), MakeTime(2018, 5, 8, 12, 0, 0));
+}
+
 TEST(Crontab, EveryMonday) {
 	Crontab cron;
 	cron.Parse(10, 59, 59);
-	cron.DayOfWeek().Clear();
-	cron.DayOfWeek().SetSingle(1);
+	cron.DayOfWeek()
+		.Clear()
+		.SetSingle(1)
+		;
 
 	AssertFindNext(cron, MakeTime(2018, 5, 7, 10, 59, 58), MakeTime(2018, 5, 7, 10, 59, 59));
 	AssertFindNext(cron, MakeTime(2018, 5, 7, 10, 59, 59), MakeTime(2018, 5, 14, 10, 59, 59));
 	AssertFindNext(cron, MakeTime(2018, 5, 28, 11, 0, 0), MakeTime(2018, 6, 4, 10, 59, 59));
+}
+
+TEST(Crontab, WeekdayAndHour) {
+	Crontab cron;
+	cron.Parse(9, 0, 0);
+	cron.Hour().SetSingle(18);
+	cron.DayOfWeek()
+		.Clear()
+		.SetSingle(1)
+		.SetSingle(3)
+		.SetSingle(5)
+		;
+
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 12, 0, 0), MakeTime(2018, 5, 7, 18, 0, 0));
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 19, 0, 0), MakeTime(2018, 5, 9, 9, 0, 0));
+}
+
+TEST(Crontab, LeapYearEverySecond) {
+	Crontab cron;
+	cron.Second().SetFitsAll();
+	cron.Minute().SetFitsAll();
+	cron.Hour().SetFitsAll();
+	cron.DayOfMonth().SetSingle(29);
+	cron.DayOfWeek().SetFitsAll();
+	cron.Month().SetSingle(2);
+	cron.Year().SetFitsAll();
+
+	AssertFindNext(cron, MakeTime(2018, 5, 7, 12, 0, 0), MakeTime(2020, 2, 29, 0, 0, 0));
+	AssertFindNext(cron, MakeTime(2020, 2, 29, 0, 0, 0), MakeTime(2020, 2, 29, 0, 0, 1));
 }

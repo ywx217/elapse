@@ -67,23 +67,28 @@ bool Crontab::FindNext(std::time_t& timestamp, int offset) const {
 		if (!minute_.NextFit(now.tm_min, next)) {
 			return false;
 		}
-		if (now.tm_min > next) {
+		if (now.tm_min != next) {
+			if (now.tm_min > next) {
+				++now.tm_hour;
+				TimeNormalize(now);
+			}
 			now.tm_min = next;
-			++now.tm_hour;
-			TimeNormalize(now);
-		} else {
-			now.tm_min = next;
+			now.tm_sec = 0;
+			continue;
 		}
 		// hour
 		if (!hour_.NextFit(now.tm_hour, next)) {
 			return false;
 		}
-		if (now.tm_hour > next) {
+		if (now.tm_hour != next) {
+			if (now.tm_hour > next) {
+				++now.tm_mday;
+				TimeNormalize(now);
+			}
 			now.tm_hour = next;
-			++now.tm_mday;
-			TimeNormalize(now);
-		} else {
-			now.tm_hour = next;
+			now.tm_min = 0;
+			now.tm_sec = 0;
+			continue;
 		}
 		// day (including dow and dom)
 		if (!dow_.NextFit(now.tm_wday, next)) {
@@ -95,19 +100,23 @@ bool Crontab::FindNext(std::time_t& timestamp, int offset) const {
 				deltaDays += 7;
 			}
 			now.tm_mday += deltaDays;
+			now.tm_hour = 0;
+			now.tm_min = 0;
+			now.tm_sec = 0;
 			TimeNormalize(now);
 			continue;
 		}
 		if (!dom_.NextFit(now.tm_mday, next)) {
 			return false;
 		}
-		if (now.tm_mday > next) {
+		if (now.tm_mday != next) {
+			if (now.tm_mday > next) {
+				++now.tm_mon;
+			}
 			now.tm_mday = next;
-			++now.tm_mon;
-			TimeNormalize(now);
-			continue;
-		} else if (now.tm_mday < next) {
-			now.tm_mday = next;
+			now.tm_hour = 0;
+			now.tm_min = 0;
+			now.tm_sec = 0;
 			TimeNormalize(now);
 			continue;
 		}
@@ -115,13 +124,17 @@ bool Crontab::FindNext(std::time_t& timestamp, int offset) const {
 		if (!month_.NextFit(now.tm_mon + 1, next)) {
 			return false;
 		}
-		if (now.tm_mon > next - 1) {
+		if (now.tm_mon != next - 1) {
+			if (now.tm_mon > next - 1) {
+				++now.tm_year;
+			}
 			now.tm_mon = next - 1;
-			++now.tm_year;
+			now.tm_mday = 1;
+			now.tm_hour = 0;
+			now.tm_min = 0;
+			now.tm_sec = 0;
 			TimeNormalize(now);
 			continue;
-		} else {
-			now.tm_mon = next - 1;
 		}
 		// year
 		if (!year_.NextFit(now.tm_year + 1900, next)) {

@@ -38,31 +38,37 @@ namespace crontab {
 template <std::size_t Bits, std::size_t BaseOffset = 0>
 class Field {
 public:
+	typedef Field<Bits, BaseOffset> MyTy;
+public:
 	Field() {}
 	virtual ~Field() {}
 
-	void SetFitsAll() {
+	MyTy& SetFitsAll() {
 		fits_.set();
+		return *this;
 	}
 
-	void SetSingle(std::size_t idx) {
+	MyTy& SetSingle(std::size_t idx) {
 		if (idx < BaseOffset || idx - BaseOffset >= Bits) {
-			return;
+			return *this;
 		}
 		fits_[idx - BaseOffset] = true;
+		return *this;
 	}
 
-	void SetRange(std::size_t from, std::size_t to) {
+	MyTy& SetRange(std::size_t from, std::size_t to) {
 		for (; from < to; ++from) {
 			if (from < BaseOffset || from - BaseOffset >= Bits) {
 				break;
 			}
 			fits_[from - BaseOffset] = true;
 		}
+		return *this;
 	}
 
-	void Clear() {
+	MyTy& Clear() {
 		fits_.reset();
+		return *this;
 	}
 
 	bool Fits(std::size_t idx) const {
