@@ -17,16 +17,16 @@ TEST(TreeContainer, InsertAndExpire) {
 	}
 	now = TIME_BEGIN;
 	for (int i = 0; i < 10; ++i, now += 100) {
-		ASSERT_EQ(1, ctn.PopExpires(now).size());
+		ASSERT_EQ(1, ctn.PopExpires(now));
 	}
 	++now;
 	for (int i = 10; i < 20; ++i, now += 100) {
-		ASSERT_EQ(1, ctn.PopExpires(now).size());
+		ASSERT_EQ(1, ctn.PopExpires(now));
 	}
 	--now;
 	now += 100;
 	for (int i = 20; i < 100; i += 2, now += 200) {
-		ASSERT_EQ(2, ctn.PopExpires(now).size());
+		ASSERT_EQ(2, ctn.PopExpires(now));
 	}
 }
 
@@ -40,9 +40,9 @@ TEST(TreeContainer, Remove) {
 
 	ASSERT_TRUE(ctn.Remove(id_2));
 	ASSERT_FALSE(ctn.Remove(id_2));
-	ASSERT_EQ(2, ctn.PopExpires(3).size());
+	ASSERT_EQ(2, ctn.PopExpires(3));
 
 	ASSERT_FALSE(ctn.Remove(id_3));
 	ASSERT_TRUE(ctn.Remove(id_4));
-	ASSERT_EQ(0, ctn.PopExpires(1000).size());
+	ASSERT_EQ(0, ctn.PopExpires(1000));
 }

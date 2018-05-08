@@ -50,19 +50,19 @@ void TreeJobContainer::RemoveAll() {
 	jobs_.clear();
 }
 
-std::vector<JobId> TreeJobContainer::PopExpires(TimeUnit now) {
-	std::vector<JobId> expiredJobs;
+size_t TreeJobContainer::PopExpires(TimeUnit now) {
+	size_t count = 0;
 	auto& index = boost::multi_index::get<expire>(jobs_);
-	auto eraseTo = std::find_if(index.begin(), index.end(), [&expiredJobs, now](Job const& job) {
+	auto eraseTo = std::find_if(index.begin(), index.end(), [&count, now](Job const& job) {
 		// iterate expire time in ascending order
 		if (job.AutoFire(now)) {
-			expiredJobs.push_back(job.id_);
+			++count;
 			return false;
 		}
 		return true;
 	});
 	index.erase(index.begin(), eraseTo);
-	return expiredJobs;
+	return count;
 }
 
 } // namespace elapse

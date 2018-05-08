@@ -70,7 +70,7 @@ typedef boost::multi_index_container<
 			boost::multi_index::tag<expire>, BOOST_MULTI_INDEX_MEMBER(Job, TimeUnit, expire_)> >
 > JobSet;
 
-// a job container based on heap
+// a job container based on boost::multi_index_container (RB-Tree & unordered map)
 class TreeJobContainer : public JobContainer {
 public:
 	TreeJobContainer() {}
@@ -79,7 +79,7 @@ public:
 	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb);
 	virtual bool Remove(JobId handle);
 	virtual void RemoveAll();
-	virtual std::vector<JobId> PopExpires(TimeUnit now);
+	virtual size_t PopExpires(TimeUnit now);
 
 protected:
 	template <class Tag, class Key>

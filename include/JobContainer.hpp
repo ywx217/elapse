@@ -47,7 +47,7 @@ public:
 	// cancel all callbacks
 	virtual void RemoveAll() = 0;
 	// removes all expired handles and return them, according to the given time.
-	virtual std::vector<JobId> PopExpires(TimeUnit now) = 0;
+	virtual size_t PopExpires(TimeUnit now) = 0;
 };
 
 } // namespace elapse
