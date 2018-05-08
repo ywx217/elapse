@@ -43,7 +43,8 @@ template <class Key, class Hash=std::hash<Key>>
 class Scheduler {
 public:
 	typedef Key key_type;
-	typedef std::unordered_map<Key, JobId, Hash> map_type;
+	typedef std::pair<JobId, crontab::RepeatablePtr> value_type;
+	typedef std::unordered_map<Key, value_type, Hash> map_type;
 
 public:
 	Scheduler(JobContainer* containerPtr) : container_(containerPtr) {}
@@ -67,17 +68,46 @@ public:
 			this->OnTriggered(alias, id);
 			cb(id);
 		});
-		jobs_[alias] = id;
+		jobs_[alias] = std::make_pair(id, crontab::RepeatablePtr(nullptr));
 	}
+
+	// schedule a new repeated callback
+	void ScheduleRepeat(Key const& alias, crontab::RepeatablePtr const& repeatConfig, ExpireCallback const& cb) {
+		Cancel(alias);
+		auto expireTime = repeatConfig->NextExpire(clock_);
+		if (!expireTime) {
+			return;
+		}
+		auto id = container_->Add(expireTime, [this, alias, cb](JobId id) {
+			// TODO: 注意测试：repeat任务中取消、任务中重新创建一个同名的其他参数任务
+			auto it = jobs_.find(alias);
+			if (it == jobs_.end()) {
+				return;
+			}
+			it->second.first = 0;
+			cb(id);
+			it = jobs_.find(alias);
+			if (it == jobs_.end() || it->second.first != 0 || !it->second.second) {
+				return;
+			}
+			ScheduleRepeat(alias, it->second.second, cb);
+		});
+	}
+
 	// cancel a call
 	bool Cancel(Key const& alias) {
 		auto it = jobs_.find(alias);
 		if (it == jobs_.end()) {
 			return false;
 		}
-		container_->Remove(it->second);
+		container_->Remove(it->second.first);
 		jobs_.erase(it);
 		return true;
+	}
+
+	// check has a callback
+	bool HasCallback(Key const& alias) const {
+		return jobs_.find(alias) != jobs_.end();
 	}
 
 	// --------------------------------------------------
@@ -90,15 +120,15 @@ public:
 	void ScheduleAt(Key const& alias, size_t hour, size_t minute, size_t second, ExpireCallback const& cb) {
 		crontab::Crontab cron;
 		cron.Parse(hour, minute, second);
-		auto expire = clock_.NowTimeT();
-		if (!cron.FindNext(expire)) {
+		auto expireTime = cron.NextExpire(clock_);
+		if (!expireTime) {
 			return;
 		}
-		Schedule(alias, ToTimeUnit(expire), cb);
+		Schedule(alias, expireTime, cb);
 	}
 
-	void ScheduleContab(Key const& alias, std::string const& contab, ExpireCallback const& cb) {
-		// TODO: add crontab feature
+	void ScheduleContab(Key const& alias, crontab::CrontabPtr const& cron, ExpireCallback const& cb) {
+		ScheduleRepeat(alias, cron, cb);
 	}
 
 protected:
