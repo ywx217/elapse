@@ -41,8 +41,9 @@ inline void TimeNormalize(std::tm& tm) {
 	}
 }
 
-bool Crontab::FindNext(std::time_t& timestamp) const {
+bool Crontab::FindNext(std::time_t& timestamp, int offset) const {
 	std::tm now;
+	timestamp += offset;
 	auto p = std::localtime(&timestamp);
 	if (!p) {
 		return false;
@@ -89,7 +90,7 @@ bool Crontab::FindNext(std::time_t& timestamp) const {
 			return false;
 		}
 		if (now.tm_wday != next) {
-			auto deltaDays = next - now.tm_wday;
+			int deltaDays = next - now.tm_wday;
 			if (deltaDays < 0) {
 				deltaDays += 7;
 			}
@@ -111,16 +112,16 @@ bool Crontab::FindNext(std::time_t& timestamp) const {
 			continue;
 		}
 		// month
-		if (!month_.NextFit(now.tm_mon, next)) {
+		if (!month_.NextFit(now.tm_mon + 1, next)) {
 			return false;
 		}
-		if (now.tm_mon > next) {
-			now.tm_mon = next;
+		if (now.tm_mon > next - 1) {
+			now.tm_mon = next - 1;
 			++now.tm_year;
 			TimeNormalize(now);
 			continue;
 		} else {
-			now.tm_mon = next;
+			now.tm_mon = next - 1;
 		}
 		// year
 		if (!year_.NextFit(now.tm_year + 1900, next)) {

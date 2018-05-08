@@ -79,6 +79,7 @@ public:
 		for (std::size_t i = idx; i < idx + Bits; ++i) {
 			result = (i - BaseOffset) % Bits;
 			if (fits_[result]) {
+				result += BaseOffset;
 				return true;
 			}
 		}
@@ -125,7 +126,7 @@ public:
 	YearField& Year() { return year_; }
 	YearField const& Year()const { return year_; }
 
-	bool FindNext(std::time_t& timestamp) const;
+	bool FindNext(std::time_t& timestamp, int offset = 1) const;
 
 	void Parse(size_t hour, size_t minute, size_t second);
 	void Parse(size_t week, size_t hour, size_t minute, size_t second);
