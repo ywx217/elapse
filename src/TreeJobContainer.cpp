@@ -33,6 +33,9 @@ namespace elapse {
 
 JobId TreeJobContainer::Add(TimeUnit expireTime, ExpireCallback const& cb) {
 	JobId id = nextId_++;
+	while (nextId_ == 0 || jobs_.find(nextId_) != jobs_.end()) {
+		++nextId_;
+	}
 	jobs_.emplace(id, expireTime, cb);
 	return id;
 }

@@ -73,7 +73,7 @@ typedef boost::multi_index_container<
 // a job container based on boost::multi_index_container (RB-Tree & unordered map)
 class TreeJobContainer : public JobContainer {
 public:
-	TreeJobContainer() {}
+	TreeJobContainer() : nextId_(1) {}
 	virtual ~TreeJobContainer() {}
 
 	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb);
