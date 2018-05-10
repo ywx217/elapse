@@ -189,5 +189,25 @@ void Crontab::Parse(size_t month, size_t date, size_t hour, size_t minute, size_
 	second_.SetSingle(second);
 }
 
+void Crontab::ClearAll() {
+	year_.Clear();
+	month_.Clear();
+	dom_.Clear();
+	dow_.Clear();
+	hour_.Clear();
+	minute_.Clear();
+	second_.Clear();
+}
+
+void Crontab::SetAll() {
+	year_.SetFitsAll();
+	month_.SetFitsAll();
+	dom_.SetFitsAll();
+	dow_.SetFitsAll();
+	hour_.SetFitsAll();
+	minute_.SetFitsAll();
+	second_.SetFitsAll();
+}
+
 } // namespace crontab
 } // namespace elapse

@@ -153,6 +153,9 @@ public:
 	void Parse(size_t week, size_t hour, size_t minute, size_t second);
 	void Parse(size_t month, size_t date, size_t hour, size_t minute, size_t second);
 
+	void ClearAll();
+	void SetAll();
+
 protected:
 	SecondField second_;
 	MinuteField minute_;
