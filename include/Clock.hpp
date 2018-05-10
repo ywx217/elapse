@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 For more information, please refer to <http://unlicense.org>
 */
 #include <ctime>
+#include <chrono>
 #include "JobCommons.hpp"
 
 
@@ -39,18 +40,22 @@ TimeUnit ToTimeUnit(std::time_t tm);
 
 class Clock {
 public:
-	Clock() : offset_(0) {}
+	typedef std::chrono::system_clock clock_source;
+
+public:
+	Clock() : offsetInMillis_(0) {}
 	virtual ~Clock() {}
 
 	// get current clock time
 	TimeUnit Now() const;
 	std::time_t NowTimeT() const;
+	std::chrono::time_point<clock_source> TimePoint() const;
 	// adjust clock with advance
 	void Advance(TimeOffset delta);
 	// crontab and localtime support
 
 private:
-	TimeOffset offset_;
+	TimeOffset offsetInMillis_;
 };
 
 } // namespace elapse

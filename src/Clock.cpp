@@ -37,16 +37,19 @@ TimeUnit ToTimeUnit(std::time_t tm) {
 }
 
 TimeUnit Clock::Now() const {
-	auto t = std::chrono::system_clock::now();
-	return std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count() + offset_;
+	return std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint().time_since_epoch()).count();
 }
 
 std::time_t Clock::NowTimeT() const {
 	return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 }
 
+std::chrono::time_point<Clock::clock_source> Clock::TimePoint() const {
+	return clock_source::now() + std::chrono::milliseconds(offsetInMillis_);
+}
+
 void Clock::Advance(TimeOffset delta) {
-	offset_ += delta;
+	offsetInMillis_ += delta;
 }
 
 } // namespace elapse
