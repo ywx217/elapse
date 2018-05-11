@@ -28,6 +28,9 @@ For more information, please refer to <http://unlicense.org>
 */
 #include "Clock.hpp"
 #include <chrono>
+#ifdef DEBUG_PRINT
+#include <iostream>
+#endif
 
 
 namespace elapse {
@@ -41,7 +44,7 @@ TimeUnit Clock::Now() const {
 }
 
 std::time_t Clock::NowTimeT() const {
-	return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	return std::chrono::system_clock::to_time_t(TimePoint());
 }
 
 std::chrono::time_point<Clock::clock_source> Clock::TimePoint() const {
@@ -49,7 +52,13 @@ std::chrono::time_point<Clock::clock_source> Clock::TimePoint() const {
 }
 
 void Clock::Advance(TimeOffset delta) {
+#ifdef DEBUG_PRINT
+	auto before = Now();
+#endif
 	offsetInMillis_ += delta;
+#ifdef DEBUG_PRINT
+	std::cout << "  clock adjust " << before << " -> " << Now() << std::endl;
+#endif
 }
 
 } // namespace elapse
