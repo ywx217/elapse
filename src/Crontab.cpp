@@ -209,5 +209,23 @@ void Crontab::SetAll() {
 	second_.SetFitsAll();
 }
 
+
+TimeUnit Cycle::NextExpire(Clock const& clock) {
+	if (repeats_ == 0) {
+		return 0;
+	}
+	TimeUnit nextDelay = 0;
+	if (firstDelay_ > 0) {
+		nextDelay = firstDelay_;
+		firstDelay_ = 0;
+	} else {
+		nextDelay = delay_;
+	}
+	if (repeats_ > 0) {
+		--repeats_;
+	}
+	return clock.Now() + nextDelay;
+}
+
 } // namespace crontab
 } // namespace elapse

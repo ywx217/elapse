@@ -131,6 +131,8 @@ public:
 	Crontab() {}
 	virtual ~Crontab() {}
 
+	TimeUnit NextExpire(Clock const& clock) override;
+
 	SecondField& Second() { return second_; }
 	SecondField const& Second() const { return second_; }
 	MinuteField& Minute() { return minute_; }
@@ -146,13 +148,10 @@ public:
 	YearField& Year() { return year_; }
 	YearField const& Year()const { return year_; }
 
-	TimeUnit NextExpire(Clock const& clock) override;
 	bool FindNext(std::time_t& timestamp, int offset = 1) const;
-
 	void Parse(size_t hour, size_t minute, size_t second);
 	void Parse(size_t week, size_t hour, size_t minute, size_t second);
 	void Parse(size_t month, size_t date, size_t hour, size_t minute, size_t second);
-
 	void ClearAll();
 	void SetAll();
 
@@ -167,6 +166,23 @@ protected:
 };
 
 typedef std::shared_ptr<Crontab> CrontabPtr;
+
+
+class Cycle :public IRepeatable {
+public:
+	Cycle(TimeUnit delay, int repeats, TimeUnit firstDelay=0) :
+		repeats_(repeats),
+		delay_(delay),
+		firstDelay_(firstDelay) {
+	}
+	virtual ~Cycle() {}
+
+	TimeUnit NextExpire(Clock const& clock) override;
+
+protected:
+	int repeats_;
+	TimeUnit delay_, firstDelay_;
+};
 
 } // namespace crontab
 } // namespace elapse

@@ -23,8 +23,9 @@ TEST(Scheduler, NormalSchedule) {
 		s.ScheduleWithDelay(i, (i + 1) * 100, cb);
 	}
 	for (int i = 0; i < 10; ++i) {
-		s.Advance(100);
-		s.Tick();
+		s.Advance(99); s.Tick();
+		ASSERT_EQ(i, counter);
+		s.Advance(1); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 }
@@ -87,8 +88,9 @@ TEST(Scheduler, CancelSingleInCB) {
 		++counter;
 		s.Cancel(1);
 	});
-	s.Advance(10);
-	s.Tick();
+	s.Advance(9); s.Tick();
+	ASSERT_EQ(0, counter);
+	s.Advance(1); s.Tick();
 	ASSERT_EQ(1, counter);
 }
 
@@ -104,9 +106,10 @@ TEST(Scheduler, ScheduleInCB) {
 	s.ScheduleWithDelay(1, 10, cb);
 	
 	for (int i = 0; i < 1024; ++i) {
+		s.Advance(9); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(10);
-		s.Tick();
+		s.Advance(1); s.Tick();
+		ASSERT_EQ(i + 1, counter);
 	}
 }
 
@@ -143,5 +146,58 @@ TEST(Scheduler, CrontabSchedule) {
 		s.Tick();
 		ASSERT_EQ(i, counter);
 		s.Advance(60 * 1000);
+	}
+}
+
+TEST(Scheduler, CrontabCancel) {
+	const std::string alias("foo");
+	Scheduler<std::string> s(new TreeJobContainer());
+	size_t counter = 0;
+	ExpireCallback cb = [&counter, &s, &alias](JobId id) {
+		++counter;
+		if (counter >= 100) {
+			s.Cancel(alias);
+		}
+	};
+
+	auto cron = std::make_shared<crontab::Crontab>();
+	cron->SetAll();
+	cron->Second().Clear().SetSingle(0);
+	s.ScheduleRepeat(alias, cron, cb);
+
+	for (int i = 0; i < 1024; ++i) {
+		s.Tick();
+		ASSERT_EQ(std::min(100, i), counter);
+		s.Advance(60 * 1000);
+	}
+}
+
+TEST(Scheduler, CrontabScheduleAnother) {
+	const std::string alias("foo");
+	Scheduler<std::string> s(new TreeJobContainer());
+	size_t counter = 0;
+	ExpireCallback cb = [&counter, &s, &alias](JobId id) {
+		++counter;
+		if (counter >= 100) {
+			s.ScheduleWithDelay(alias, 100, [&counter](JobId id) { ++counter; });
+		}
+	};
+
+	auto cron = std::make_shared<crontab::Crontab>();
+	cron->SetAll();
+	cron->Second().Clear().SetSingle(0);
+	s.ScheduleRepeat(alias, cron, cb);
+
+	for (int i = 0; i < 1024; ++i) {
+		if (i < 100) {
+			s.Advance(60 * 1000);
+			s.Tick();
+			ASSERT_EQ(i + 1, counter);
+		} else {
+			s.Advance(99); s.Tick();
+			ASSERT_EQ(100, counter);
+			s.Advance(1); s.Tick();
+			ASSERT_EQ(101, counter);
+		}
 	}
 }
