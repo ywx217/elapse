@@ -4,6 +4,8 @@ set(PROJECT_NAME_STR elapse)
 project(${PROJECT_NAME_STR} CXX C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(ENABLE_ASAN "Enable address sanitizer in clang env." OFF)
+set(BOOST_ROOT "c:/code/libs/cpp/boost_1_67_0" CACHE FILEPATH "boost library root path")
+set(BOOST_LIBRARYDIR "${BOOST_ROOT}/stage/lib")
 
 find_package(Threads REQUIRED)
 
