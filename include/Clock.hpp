@@ -1,3 +1,4 @@
+#pragma once
 /*
 Author: ywx217@gmail.com
 
@@ -26,25 +27,35 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include "Job.hpp"
+#include <ctime>
+#include <chrono>
+#include "JobCommons.hpp"
 
 
 namespace elapse {
 
-bool Job::IsExpired(TimeUnit now) const {
-	return expire_ <= now;
-}
+typedef std::int64_t TimeOffset;
 
-void Job::Fire() const {
-	cb_(id_);
-}
+TimeUnit ToTimeUnit(std::time_t tm);
 
-bool Job::AutoFire(TimeUnit now) const {
-	if (IsExpired(now)) {
-		cb_(id_);
-		return true;
-	}
-	return false;
-}
+class Clock {
+public:
+	typedef std::chrono::system_clock clock_source;
+
+public:
+	Clock() : offsetInMillis_(0) {}
+	virtual ~Clock() {}
+
+	// get current clock time
+	TimeUnit Now() const;
+	std::time_t NowTimeT() const;
+	std::chrono::time_point<clock_source> TimePoint() const;
+	// adjust clock with advance
+	void Advance(TimeOffset delta);
+	// crontab and localtime support
+
+private:
+	TimeOffset offsetInMillis_;
+};
 
 } // namespace elapse

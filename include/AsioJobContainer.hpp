@@ -1,3 +1,4 @@
+#pragma once
 /*
 Author: ywx217@gmail.com
 
@@ -26,25 +27,61 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
+#include <set>
+#include <unordered_map>
+#include <memory>
+//#include <boost/pool/pool_alloc.hpp>
 #include "Job.hpp"
+#include "JobContainer.hpp"
 
 
 namespace elapse {
 
-bool Job::IsExpired(TimeUnit now) const {
-	return expire_ <= now;
-}
+class sync_timer {
+public:
+	sync_timer(JobId id, TimeUnit expire_time, ExpireCallback const& cb) : id_(id), expire_time_(expire_time), cb_(cb) {}
+	virtual ~sync_timer() {}
 
-void Job::Fire() const {
-	cb_(id_);
-}
+public:
+	JobId id_;
+	TimeUnit expire_time_;
+	ExpireCallback cb_;
+};
 
-bool Job::AutoFire(TimeUnit now) const {
-	if (IsExpired(now)) {
-		cb_(id_);
-		return true;
+typedef std::shared_ptr<sync_timer> sync_timer_ptr;
+
+struct set_cmp {
+	bool operator()(sync_timer_ptr const& x, sync_timer_ptr const& y) const {
+		if (x->id_ == y->id_) {
+			return false;
+		}
+		if (x->expire_time_ != y->expire_time_) {
+			return x->expire_time_ < y->expire_time_;
+		}
+		return x->id_ < y->id_;
 	}
-	return false;
-}
+};
+
+// a job container just for comparison
+class AsioJobContainer : public JobContainer {
+public:
+	typedef std::unordered_map<JobId, sync_timer_ptr> timer_map;
+	typedef std::vector<sync_timer_ptr> timer_vec;
+	//typedef boost::fast_pool_allocator<sync_timer_ptr> pool_type;
+
+public:
+	AsioJobContainer() {}
+	virtual ~AsioJobContainer() {}
+
+	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb);
+	virtual bool Remove(JobId handle);
+	virtual void RemoveAll();
+	virtual size_t PopExpires(TimeUnit now);
+
+protected:
+	JobId nextId_;
+	timer_map timer_map_;
+	std::set<sync_timer_ptr, set_cmp> timer_set_;
+};
 
 } // namespace elapse

@@ -41,6 +41,7 @@ public:
 	virtual ~Job() {}
 
 	bool IsExpired(TimeUnit now) const;
+	void Fire() const;
 	bool AutoFire(TimeUnit now) const;
 
 public:
