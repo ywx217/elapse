@@ -106,9 +106,9 @@ TEST(Scheduler, ScheduleInCB) {
 	s.ScheduleWithDelay(1, 10, cb);
 	
 	for (int i = 0; i < 1024; ++i) {
-		s.Advance(9); s.Tick();
+		s.Advance(8); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(1); s.Tick();
+		s.Advance(2); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 }
