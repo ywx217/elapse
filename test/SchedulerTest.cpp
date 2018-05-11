@@ -193,10 +193,13 @@ TEST(Scheduler, CrontabScheduleAnother) {
 			s.Advance(60 * 1000);
 			s.Tick();
 			ASSERT_EQ(i + 1, counter);
-		} else {
+		} else if (i == 100) {
 			s.Advance(99); s.Tick();
 			ASSERT_EQ(100, counter);
 			s.Advance(1); s.Tick();
+			ASSERT_EQ(101, counter);
+		} else {
+			s.Advance(100); s.Tick();
 			ASSERT_EQ(101, counter);
 		}
 	}
