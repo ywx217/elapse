@@ -27,6 +27,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 For more information, please refer to <http://unlicense.org>
 */
 #include "TreeJobContainer.hpp"
+#ifdef DEBUG_PRINT
+#include <iostream>
+#endif
 
 
 namespace elapse {
@@ -37,6 +40,9 @@ JobId TreeJobContainer::Add(TimeUnit expireTime, ExpireCallback const& cb) {
 		++nextId_;
 	}
 	jobs_.emplace(id, expireTime, cb);
+	#ifdef DEBUG_PRINT
+	std::cout << "  + job-" << id << " expire=" << expireTime << std::endl;
+	#endif
 	return id;
 }
 
@@ -45,6 +51,9 @@ bool TreeJobContainer::Remove(JobId handle) {
 	if (it == jobs_.end()) {
 		return false;
 	}
+	#ifdef DEBUG_PRINT
+	std::cout << "  - job-" << it->id_ << " removed" << std::endl;
+	#endif
 	jobs_.erase(it);
 	return true;
 }
@@ -70,6 +79,9 @@ size_t TreeJobContainer::PopExpires(TimeUnit now) {
 		if (it == idIndex.end()) {
 			continue;
 		}
+		#ifdef DEBUG_PRINT
+		std::cout << "[" << now << "] - job-" << it->id_ << " fired" << std::endl;
+		#endif
 		it->Fire();
 		idIndex.erase(it);
 	}
