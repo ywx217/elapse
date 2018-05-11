@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include <tuple>
 #include "Crontab.hpp"
+#include "Clock.hpp"
 
 using namespace elapse::crontab;
 
@@ -99,4 +100,32 @@ TEST(Crontab, LeapYearEverySecond) {
 
 	AssertFindNext(cron, MakeTime(2018, 5, 7, 12, 0, 0), MakeTime(2020, 2, 29, 0, 0, 0));
 	AssertFindNext(cron, MakeTime(2020, 2, 29, 0, 0, 0), MakeTime(2020, 2, 29, 0, 0, 1));
+}
+
+TEST(Crontab, Cycle) {
+	Cycle c(100, 5);
+	elapse::Clock clock;
+
+	for (int i = 0; i < 5; ++i) {
+		ASSERT_EQ(100, c.NextExpire(clock) - clock.Now());
+	}
+	for (int i = 0; i < 3; ++i) {
+		ASSERT_EQ(0, c.NextExpire(clock));
+	}
+}
+
+TEST(Crontab, CycleFirstDelay) {
+	Cycle c(100, 5, 10);
+	elapse::Clock clock;
+
+	for (int i = 0; i < 5; ++i) {
+		if (i == 0) {
+			ASSERT_EQ(10, c.NextExpire(clock) - clock.Now());
+		} else {
+			ASSERT_EQ(100, c.NextExpire(clock) - clock.Now());
+		}
+	}
+	for (int i = 0; i < 3; ++i) {
+		ASSERT_EQ(0, c.NextExpire(clock));
+	}
 }

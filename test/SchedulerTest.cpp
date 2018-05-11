@@ -204,3 +204,45 @@ TEST(Scheduler, CrontabScheduleAnother) {
 		}
 	}
 }
+
+TEST(Scheduler, CycleSchedule) {
+	Scheduler<int> s(new TreeJobContainer());
+	size_t counter = 0;
+	auto repeatable = std::make_shared<crontab::Cycle>(100, 10);
+
+	ExpireCallback cb = [&s, &counter](JobId id) {
+		++counter;
+	};
+	s.ScheduleRepeat(1, repeatable, cb);
+
+	for (int i = 0; i < 10; ++i) {
+		s.Advance(99); s.Tick();
+		ASSERT_EQ(i, counter);
+		s.Advance(1); s.Tick();
+		ASSERT_EQ(i + 1, counter);
+	}
+	s.Advance(10000); s.Tick();
+	ASSERT_EQ(10, counter);
+}
+
+TEST(Scheduler, CycleScheduleAndCancel) {
+	Scheduler<int> s(new TreeJobContainer());
+	size_t counter = 0;
+	auto repeatable = std::make_shared<crontab::Cycle>(100, 10);
+
+	ExpireCallback cb = [&s, &counter](JobId id) {
+		if (++counter >= 5) {
+			s.Cancel(1);
+		}
+	};
+	s.ScheduleRepeat(1, repeatable, cb);
+
+	for (int i = 0; i < 5; ++i) {
+		s.Advance(99); s.Tick();
+		ASSERT_EQ(i, counter);
+		s.Advance(1); s.Tick();
+		ASSERT_EQ(i + 1, counter);
+	}
+	s.Advance(10000); s.Tick();
+	ASSERT_EQ(5, counter);
+}
