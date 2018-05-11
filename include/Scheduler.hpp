@@ -72,14 +72,14 @@ public:
 	}
 
 	// schedule a new repeated callback
-	void ScheduleRepeat(Key const& alias, crontab::RepeatablePtr const& repeatConfig, ExpireCallback const& cb) {
+	void ScheduleRepeat(Key const& alias, crontab::RepeatablePtr repeatConfig, ExpireCallback const& cb) {
 		Cancel(alias);
 		auto expireTime = repeatConfig->NextExpire(clock_);
 		if (!expireTime) {
 			return;
 		}
 		auto id = container_->Add(expireTime, [this, alias, cb](JobId id) {
-			// TODO: 注意测试：repeat任务中取消、任务中重新创建一个同名的其他参数任务
+			// TODO: test reschedule in the callback
 			auto it = jobs_.find(alias);
 			if (it == jobs_.end()) {
 				return;
@@ -92,6 +92,7 @@ public:
 			}
 			ScheduleRepeat(alias, it->second.second, cb);
 		});
+		jobs_[alias] = std::make_pair(id, repeatConfig);
 	}
 
 	// cancel a call
@@ -113,8 +114,8 @@ public:
 	// --------------------------------------------------
 	// enhanced schedule methods
 	// --------------------------------------------------
-	void ScheduleWithDelay(Key const& alias, TimeUnit delay, ExpireCallback const& cb) {
-		Schedule(alias, clock_.Now() + delay, cb);
+	void ScheduleWithDelay(Key const& alias, TimeUnit delayInMillis, ExpireCallback const& cb) {
+		Schedule(alias, clock_.Now() + delayInMillis, cb);
 	}
 
 	void ScheduleAt(Key const& alias, size_t hour, size_t minute, size_t second, ExpireCallback const& cb) {
@@ -125,10 +126,6 @@ public:
 			return;
 		}
 		Schedule(alias, expireTime, cb);
-	}
-
-	void ScheduleContab(Key const& alias, crontab::CrontabPtr const& cron, ExpireCallback const& cb) {
-		ScheduleRepeat(alias, cron, cb);
 	}
 
 protected:

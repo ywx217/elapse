@@ -54,20 +54,24 @@ void TreeJobContainer::RemoveAll() {
 }
 
 size_t TreeJobContainer::PopExpires(TimeUnit now) {
-	std::vector<Job> expiredJobs;
-	auto& index = boost::multi_index::get<expire>(jobs_);
-	auto eraseTo = std::find_if(index.begin(), index.end(), [&expiredJobs, now](Job const& job) {
-		// iterate expire time in ascending order
+	std::vector<JobId> expiredJobs;
+	auto& expireIndex = boost::multi_index::get<expire>(jobs_);
+	auto& idIndex = boost::multi_index::get<id>(jobs_);
+	for (auto const& job : expireIndex) {
 		if (job.IsExpired(now)) {
-			expiredJobs.push_back(job);
-			return false;
+			expiredJobs.push_back(job.id_);
+		} else {
+			break;
 		}
-		return true;
-	});
-	index.erase(index.begin(), eraseTo);
+	}
 
-	for (auto const& job : expiredJobs) {
-		job.Fire();
+	for (auto const& expiredId : expiredJobs) {
+		auto it = idIndex.find(expiredId);
+		if (it == idIndex.end()) {
+			continue;
+		}
+		it->Fire();
+		idIndex.erase(it);
 	}
 	return expiredJobs.size();
 }
