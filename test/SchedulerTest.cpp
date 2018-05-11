@@ -51,11 +51,8 @@ TEST(Scheduler, CancelInCB) {
 TEST(Scheduler, CancelAllInCB) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback cb = [&counter](JobId id) {
-		++counter;
-	};
 	for (int i = 0; i < 10; ++i) {
-		s.ScheduleWithDelay(i, 10, [&s, &counter, i](JobId id) {
+		s.ScheduleWithDelay(i, 10, [&s, &counter](JobId id) {
 			++counter;
 			for (int i = 9; i >= 0; --i) {
 				s.Cancel(i);
@@ -70,17 +67,26 @@ TEST(Scheduler, CancelAllInCB) {
 TEST(Scheduler, CancelAllInCB2) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback cb = [&counter](JobId id) {
-		++counter;
-	};
 	for (int i = 0; i < 10; ++i) {
-		s.ScheduleWithDelay(i, 10, [&s, &counter, i](JobId id) {
+		s.ScheduleWithDelay(i, 10, [&s, &counter](JobId id) {
 			++counter;
 			for (int i = 0; i < 10; ++i) {
 				s.Cancel(i);
 			}
 		});
 	}
+	s.Advance(10);
+	s.Tick();
+	ASSERT_EQ(1, counter);
+}
+
+TEST(Scheduler, CancelSingleInCB) {
+	Scheduler<int> s(new TreeJobContainer());
+	size_t counter = 0;
+	s.ScheduleWithDelay(1, 10, [&s, &counter](JobId id) {
+		++counter;
+		s.Cancel(1);
+	});
 	s.Advance(10);
 	s.Tick();
 	ASSERT_EQ(1, counter);
@@ -109,6 +115,7 @@ TEST(Scheduler, ScheduleImmediatlyInCB) {
 	size_t counter = 0;
 	ExpireCallback *pCB = nullptr;
 	ExpireCallback cb = [&counter, &s, &pCB](JobId id) {
+		s.Cancel(1);
 		s.ScheduleWithDelay(1, 0, *pCB);
 		++counter;
 	};
