@@ -26,25 +26,39 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include "Job.hpp"
+#include "Clock.hpp"
+#include <chrono>
+#ifdef DEBUG_PRINT
+#include <iostream>
+#endif
 
 
 namespace elapse {
 
-bool Job::IsExpired(TimeUnit now) const {
-	return expire_ <= now;
+TimeUnit ToTimeUnit(std::time_t tm) {
+	return tm * 1000;
 }
 
-void Job::Fire() const {
-	cb_(id_);
+TimeUnit Clock::Now() const {
+	return std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint().time_since_epoch()).count();
 }
 
-bool Job::AutoFire(TimeUnit now) const {
-	if (IsExpired(now)) {
-		cb_(id_);
-		return true;
-	}
-	return false;
+std::time_t Clock::NowTimeT() const {
+	return std::chrono::system_clock::to_time_t(TimePoint());
+}
+
+std::chrono::time_point<Clock::clock_source> Clock::TimePoint() const {
+	return clock_source::now() + std::chrono::milliseconds(offsetInMillis_);
+}
+
+void Clock::Advance(TimeOffset delta) {
+#ifdef DEBUG_PRINT
+	auto before = Now();
+#endif
+	offsetInMillis_ += delta;
+#ifdef DEBUG_PRINT
+	std::cout << "  clock adjust " << before << " -> " << Now() << std::endl;
+#endif
 }
 
 } // namespace elapse

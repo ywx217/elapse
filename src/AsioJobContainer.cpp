@@ -26,25 +26,48 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include "Job.hpp"
+#include "AsioJobContainer.hpp"
 
 
 namespace elapse {
 
-bool Job::IsExpired(TimeUnit now) const {
-	return expire_ <= now;
+JobId AsioJobContainer::Add(TimeUnit expireTime, ExpireCallback const& cb) {
+	JobId id = nextId_++;
+	sync_timer_ptr p(new sync_timer(id, expireTime, cb));
+	timer_set_.insert(p);
+	timer_map_.insert(std::make_pair(id, p));
+	return id;
 }
 
-void Job::Fire() const {
-	cb_(id_);
-}
-
-bool Job::AutoFire(TimeUnit now) const {
-	if (IsExpired(now)) {
-		cb_(id_);
+bool AsioJobContainer::Remove(JobId handle) {
+	auto it = timer_map_.find(handle);
+	if (it != timer_map_.end()) {
+		timer_set_.erase(it->second);
+		timer_map_.erase(it);
 		return true;
+	} else {
+		return false;
 	}
-	return false;
+}
+
+void AsioJobContainer::RemoveAll() {
+	timer_set_.clear();
+	timer_map_.clear();
+}
+
+size_t AsioJobContainer::PopExpires(TimeUnit now) {
+	size_t count = 0;
+	while (!timer_set_.empty()) {
+		sync_timer_ptr now_item = *timer_set_.begin();
+		if (now < now_item->expire_time_) {
+			break;
+		}
+		timer_set_.erase(now_item);
+		timer_map_.erase(now_item->id_);
+		now_item->cb_(now_item->id_);
+		++count;
+	}
+	return count;
 }
 
 } // namespace elapse

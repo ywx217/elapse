@@ -26,25 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org>
 */
-#include "Job.hpp"
 
 
 namespace elapse {
-
-bool Job::IsExpired(TimeUnit now) const {
-	return expire_ <= now;
-}
-
-void Job::Fire() const {
-	cb_(id_);
-}
-
-bool Job::AutoFire(TimeUnit now) const {
-	if (IsExpired(now)) {
-		cb_(id_);
-		return true;
-	}
-	return false;
-}
-
 } // namespace elapse

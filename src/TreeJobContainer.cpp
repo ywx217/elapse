@@ -27,13 +27,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 For more information, please refer to <http://unlicense.org>
 */
 #include "TreeJobContainer.hpp"
+#ifdef DEBUG_PRINT
+#include <iostream>
+#endif
 
 
 namespace elapse {
 
 JobId TreeJobContainer::Add(TimeUnit expireTime, ExpireCallback const& cb) {
 	JobId id = nextId_++;
+	while (nextId_ == 0 || jobs_.find(nextId_) != jobs_.end()) {
+		++nextId_;
+	}
 	jobs_.emplace(id, expireTime, cb);
+	#ifdef DEBUG_PRINT
+	std::cout << "  + job-" << id << " expire=" << expireTime << std::endl;
+	#endif
 	return id;
 }
 
@@ -42,23 +51,41 @@ bool TreeJobContainer::Remove(JobId handle) {
 	if (it == jobs_.end()) {
 		return false;
 	}
+	#ifdef DEBUG_PRINT
+	std::cout << "  - job-" << it->id_ << " removed" << std::endl;
+	#endif
 	jobs_.erase(it);
 	return true;
 }
 
-std::vector<JobId> TreeJobContainer::PopExpires(TimeUnit now) {
+void TreeJobContainer::RemoveAll() {
+	jobs_.clear();
+}
+
+size_t TreeJobContainer::PopExpires(TimeUnit now) {
 	std::vector<JobId> expiredJobs;
-	auto& index = boost::multi_index::get<expire>(jobs_);
-	auto eraseTo = std::find_if(index.begin(), index.end(), [&expiredJobs, now](Job const& job) {
-		// iterate expire time in ascending order
-		if (job.AutoFire(now)) {
+	auto& expireIndex = boost::multi_index::get<expire>(jobs_);
+	auto& idIndex = boost::multi_index::get<id>(jobs_);
+	for (auto const& job : expireIndex) {
+		if (job.IsExpired(now)) {
 			expiredJobs.push_back(job.id_);
-			return false;
+		} else {
+			break;
 		}
-		return true;
-	});
-	index.erase(index.begin(), eraseTo);
-	return expiredJobs;
+	}
+
+	for (auto const& expiredId : expiredJobs) {
+		auto it = idIndex.find(expiredId);
+		if (it == idIndex.end()) {
+			continue;
+		}
+		#ifdef DEBUG_PRINT
+		std::cout << "[" << now << "] - job-" << it->id_ << " fired" << std::endl;
+		#endif
+		it->Fire();
+		idIndex.erase(it);
+	}
+	return expiredJobs.size();
 }
 
 } // namespace elapse

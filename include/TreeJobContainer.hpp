@@ -37,6 +37,7 @@ For more information, please refer to <http://unlicense.org>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
 #include "Job.hpp"
 #include "JobContainer.hpp"
 
@@ -59,24 +60,26 @@ struct expire {};
 *   - a non-unique index sorted by Job::expired_,
 */
 
+
 typedef boost::multi_index_container<
 	Job,
 	boost::multi_index::indexed_by<
-		boost::multi_index::ordered_unique<
+		boost::multi_index::hashed_unique<
 			boost::multi_index::tag<id>, BOOST_MULTI_INDEX_MEMBER(Job, JobId, id_)>,
 		boost::multi_index::ordered_non_unique<
 			boost::multi_index::tag<expire>, BOOST_MULTI_INDEX_MEMBER(Job, TimeUnit, expire_)> >
 > JobSet;
 
-// a job container based on heap
+// a job container based on boost::multi_index_container (RB-Tree & unordered map)
 class TreeJobContainer : public JobContainer {
 public:
-	TreeJobContainer() {}
+	TreeJobContainer() : nextId_(1) {}
 	virtual ~TreeJobContainer() {}
 
 	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb);
 	virtual bool Remove(JobId handle);
-	virtual std::vector<JobId> PopExpires(TimeUnit now);
+	virtual void RemoveAll();
+	virtual size_t PopExpires(TimeUnit now);
 
 protected:
 	template <class Tag, class Key>
