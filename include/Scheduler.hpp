@@ -116,7 +116,7 @@ public:
 
 	void CancelAll() {
 		for (auto const& it : jobs_) {
-			container_->Remove(it->second.first);
+			container_->Remove(it.second.first);
 		}
 		jobs_.clear();
 	}
