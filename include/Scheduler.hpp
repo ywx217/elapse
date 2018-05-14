@@ -48,7 +48,7 @@ public:
 
 public:
 	Scheduler(JobContainer* containerPtr) : clock_(new Clock()), container_(containerPtr) {}
-	Scheduler(std::unique_ptr<JobContainer>&& containerPtr, std::shared_ptr<Clock> clock) : clock_(clock), container_(containerPtr) {}
+	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr) {}
 	virtual ~Scheduler() {}
 
 	// clock manipulation
@@ -58,7 +58,8 @@ public:
 
 	// member variable accessing
 	map_type const& Jobs() const { return jobs_; }
-	std::unique_ptr<JobContainer> const& Container() const { return container_; }
+	JobContainer const& Container() const { return *container_; }
+	std::shared_ptr<JobContainer> const& ContainerPtr() const { return container_; }
 
 	// bookkeeping all scheduled jobs
 	void Tick() {
@@ -146,7 +147,7 @@ protected:
 protected:
 	std::shared_ptr<Clock> clock_;
 	map_type jobs_;
-	std::unique_ptr<JobContainer> container_;
+	std::shared_ptr<JobContainer> container_;
 };
 
 } // namespace elapse
