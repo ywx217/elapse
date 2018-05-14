@@ -47,13 +47,13 @@ public:
 	typedef std::unordered_map<Key, value_type, Hash> map_type;
 
 public:
-	Scheduler(JobContainer* containerPtr) : container_(containerPtr) {}
-	Scheduler(std::unique_ptr<JobContainer>&& containerPtr) : container_(containerPtr) {}
+	Scheduler(JobContainer* containerPtr) : clock_(new Clock()), container_(containerPtr) {}
+	Scheduler(std::unique_ptr<JobContainer>&& containerPtr, std::shared_ptr<Clock> clock) : clock_(clock), container_(containerPtr) {}
 	virtual ~Scheduler() {}
 
 	// clock manipulation
 	void Advance(TimeOffset delta) {
-		clock_.Advance(delta);
+		clock_->Advance(delta);
 	}
 
 	// member variable accessing
@@ -62,7 +62,7 @@ public:
 
 	// bookkeeping all scheduled jobs
 	void Tick() {
-		auto now = clock_.Now();
+		auto now = clock_->Now();
 		container_->PopExpires(now);
 	}
 
@@ -79,7 +79,7 @@ public:
 	// schedule a new repeated callback
 	void ScheduleRepeat(Key const& alias, crontab::RepeatablePtr repeatConfig, ExpireCallback const& cb) {
 		Cancel(alias);
-		auto expireTime = repeatConfig->NextExpire(clock_);
+		auto expireTime = repeatConfig->NextExpire(*clock_);
 		if (!expireTime) {
 			return;
 		}
@@ -120,13 +120,13 @@ public:
 	// enhanced schedule methods
 	// --------------------------------------------------
 	void ScheduleWithDelay(Key const& alias, TimeUnit delayInMillis, ExpireCallback const& cb) {
-		Schedule(alias, clock_.Now() + delayInMillis, cb);
+		Schedule(alias, clock_->Now() + delayInMillis, cb);
 	}
 
 	void ScheduleAt(Key const& alias, size_t hour, size_t minute, size_t second, ExpireCallback const& cb) {
 		crontab::Crontab cron;
 		cron.Parse(hour, minute, second);
-		auto expireTime = cron.NextExpire(clock_);
+		auto expireTime = cron.NextExpire(*clock_);
 		if (!expireTime) {
 			return;
 		}
@@ -144,7 +144,7 @@ protected:
 	}
 
 protected:
-	Clock clock_;
+	std::shared_ptr<Clock> clock_;
 	map_type jobs_;
 	std::unique_ptr<JobContainer> container_;
 };
