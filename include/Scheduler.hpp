@@ -51,9 +51,14 @@ public:
 	Scheduler(std::unique_ptr<JobContainer>&& containerPtr) : container_(containerPtr) {}
 	virtual ~Scheduler() {}
 
+	// clock manipulation
 	void Advance(TimeOffset delta) {
 		clock_.Advance(delta);
 	}
+
+	// member variable accessing
+	map_type const& Jobs() const { return jobs_; }
+	std::unique_ptr<JobContainer> const& Container() const { return container_; }
 
 	// bookkeeping all scheduled jobs
 	void Tick() {
