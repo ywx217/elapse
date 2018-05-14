@@ -49,7 +49,9 @@ public:
 public:
 	Scheduler(JobContainer* containerPtr) : clock_(new Clock()), container_(containerPtr) {}
 	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr) {}
-	virtual ~Scheduler() {}
+	virtual ~Scheduler() {
+		CancelAll();
+	}
 
 	// clock manipulation
 	void Advance(TimeOffset delta) {
@@ -110,6 +112,13 @@ public:
 		container_->Remove(it->second.first);
 		jobs_.erase(it);
 		return true;
+	}
+
+	void CancelAll() {
+		for (auto const& it : jobs_) {
+			container_->Remove(it->second.first);
+		}
+		jobs_.clear();
 	}
 
 	// check has a callback
