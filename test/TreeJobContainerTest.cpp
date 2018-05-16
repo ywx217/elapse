@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include <list>
 #include "TreeJobContainer.hpp"
-#ifdef BENCHMARK_JOB_CONTAINERS
+#ifdef BENCHMARK_ASIO_JOB_CONTAINER
 #include "AsioJobContainer.hpp"
 #endif
 

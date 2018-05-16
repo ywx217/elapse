@@ -5,6 +5,8 @@
 
 using namespace elapse;
 
+const ExpireCallback EmptyCallback = [](JobId id) {};
+
 TEST(Scheduler, Init) {
 	Scheduler<std::string> s(new TreeJobContainer());
 	s.Schedule("foo", 100, [](JobId id) {
@@ -23,9 +25,9 @@ TEST(Scheduler, NormalSchedule) {
 		s.ScheduleWithDelay(i, (i + 1) * 100, cb);
 	}
 	for (int i = 0; i < 10; ++i) {
-		s.Advance(99); s.Tick();
+		s.Advance(98); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(1); s.Tick();
+		s.Advance(2); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 }
@@ -88,9 +90,9 @@ TEST(Scheduler, CancelSingleInCB) {
 		++counter;
 		s.Cancel(1);
 	});
-	s.Advance(9); s.Tick();
+	s.Advance(8); s.Tick();
 	ASSERT_EQ(0, counter);
-	s.Advance(1); s.Tick();
+	s.Advance(2); s.Tick();
 	ASSERT_EQ(1, counter);
 }
 
@@ -104,7 +106,7 @@ TEST(Scheduler, ScheduleInCB) {
 	};
 	pCB = &cb;
 	s.ScheduleWithDelay(1, 10, cb);
-	
+
 	for (int i = 0; i < 1024; ++i) {
 		s.Advance(8); s.Tick();
 		ASSERT_EQ(i, counter);
@@ -124,7 +126,7 @@ TEST(Scheduler, ScheduleImmediatlyInCB) {
 	};
 	pCB = &cb;
 	s.ScheduleWithDelay(1, 10, cb);
-	
+
 	for (int i = 0; i < 1024; ++i) {
 		ASSERT_EQ(i, counter);
 		s.Advance(10);
@@ -194,9 +196,9 @@ TEST(Scheduler, CrontabScheduleAnother) {
 			s.Tick();
 			ASSERT_EQ(i + 1, counter);
 		} else if (i == 100) {
-			s.Advance(99); s.Tick();
+			s.Advance(98); s.Tick();
 			ASSERT_EQ(100, counter);
-			s.Advance(1); s.Tick();
+			s.Advance(2); s.Tick();
 			ASSERT_EQ(101, counter);
 		} else {
 			s.Advance(100); s.Tick();
@@ -216,9 +218,9 @@ TEST(Scheduler, CycleSchedule) {
 	s.ScheduleRepeat(1, repeatable, cb);
 
 	for (int i = 0; i < 10; ++i) {
-		s.Advance(99); s.Tick();
+		s.Advance(98); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(1); s.Tick();
+		s.Advance(2); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 	s.Advance(10000); s.Tick();
@@ -238,11 +240,33 @@ TEST(Scheduler, CycleScheduleAndCancel) {
 	s.ScheduleRepeat(1, repeatable, cb);
 
 	for (int i = 0; i < 5; ++i) {
-		s.Advance(99); s.Tick();
+		s.Advance(98); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(1); s.Tick();
+		s.Advance(2); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 	s.Advance(10000); s.Tick();
 	ASSERT_EQ(5, counter);
 }
+
+#if 0
+TEST(Scheduler, BenchAdd) {
+	return;
+	Scheduler<int> s(new TreeJobContainer());
+	for (int i = 0; i < 1000000; ++i) {
+		s.ScheduleWithDelay(i, i, EmptyCallback);
+	}
+}
+
+TEST(Scheduler, BenchTick) {
+	Scheduler<int> s(new TreeJobContainer());
+	for (int i = 0; i < 1000; ++i) {
+		for (int j = 0; j < 1000; ++j) {
+			s.ScheduleWithDelay(j, j, EmptyCallback);
+		}
+		for (int j = 0; j < 1000; ++j) {
+			s.Advance(1); s.Tick();
+		}
+	}
+}
+#endif
