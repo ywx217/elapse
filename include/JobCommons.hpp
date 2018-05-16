@@ -38,4 +38,7 @@ typedef std::uint64_t TimeUnit;
 typedef std::uint64_t JobId;
 typedef std::function<void(JobId)> ExpireCallback;
 
+class Job;
+typedef std::function<bool(Job const&)> JobPredicate;
+
 } // namespace elapse

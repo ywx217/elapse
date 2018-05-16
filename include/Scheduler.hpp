@@ -47,17 +47,25 @@ public:
 	typedef std::unordered_map<Key, value_type, Hash> map_type;
 
 public:
-	Scheduler(JobContainer* containerPtr) : container_(containerPtr) {}
-	Scheduler(std::unique_ptr<JobContainer>&& containerPtr) : container_(containerPtr) {}
-	virtual ~Scheduler() {}
-
-	void Advance(TimeOffset delta) {
-		clock_.Advance(delta);
+	Scheduler(JobContainer* containerPtr) : clock_(new Clock()), container_(containerPtr) {}
+	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr) {}
+	virtual ~Scheduler() {
+		CancelAll();
 	}
+
+	// clock manipulation
+	void Advance(TimeOffset delta) {
+		clock_->Advance(delta);
+	}
+
+	// member variable accessing
+	map_type const& Jobs() const { return jobs_; }
+	JobContainer const& Container() const { return *container_; }
+	std::shared_ptr<JobContainer> const& ContainerPtr() const { return container_; }
 
 	// bookkeeping all scheduled jobs
 	void Tick() {
-		auto now = clock_.Now();
+		auto now = clock_->Now();
 		container_->PopExpires(now);
 	}
 
@@ -74,7 +82,7 @@ public:
 	// schedule a new repeated callback
 	void ScheduleRepeat(Key const& alias, crontab::RepeatablePtr repeatConfig, ExpireCallback const& cb) {
 		Cancel(alias);
-		auto expireTime = repeatConfig->NextExpire(clock_);
+		auto expireTime = repeatConfig->NextExpire(*clock_);
 		if (!expireTime) {
 			return;
 		}
@@ -106,6 +114,13 @@ public:
 		return true;
 	}
 
+	void CancelAll() {
+		for (auto const& it : jobs_) {
+			container_->Remove(it.second.first);
+		}
+		jobs_.clear();
+	}
+
 	// check has a callback
 	bool HasCallback(Key const& alias) const {
 		return jobs_.find(alias) != jobs_.end();
@@ -115,13 +130,13 @@ public:
 	// enhanced schedule methods
 	// --------------------------------------------------
 	void ScheduleWithDelay(Key const& alias, TimeUnit delayInMillis, ExpireCallback const& cb) {
-		Schedule(alias, clock_.Now() + delayInMillis, cb);
+		Schedule(alias, clock_->Now() + delayInMillis, cb);
 	}
 
 	void ScheduleAt(Key const& alias, size_t hour, size_t minute, size_t second, ExpireCallback const& cb) {
 		crontab::Crontab cron;
 		cron.Parse(hour, minute, second);
-		auto expireTime = cron.NextExpire(clock_);
+		auto expireTime = cron.NextExpire(*clock_);
 		if (!expireTime) {
 			return;
 		}
@@ -139,9 +154,9 @@ protected:
 	}
 
 protected:
-	Clock clock_;
+	std::shared_ptr<Clock> clock_;
 	map_type jobs_;
-	std::unique_ptr<JobContainer> container_;
+	std::shared_ptr<JobContainer> container_;
 };
 
 } // namespace elapse

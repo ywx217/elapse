@@ -48,6 +48,11 @@ public:
 	virtual void RemoveAll() = 0;
 	// removes all expired handles and return them, according to the given time.
 	virtual size_t PopExpires(TimeUnit now) = 0;
+	// iterate all handlers
+	virtual void IterJobs(JobPredicate pred) const = 0;
+	// iterate handlers and remove
+	virtual void RemoveJobs(JobPredicate pred) = 0;
+	virtual size_t Size() const = 0;
 };
 
 } // namespace elapse
