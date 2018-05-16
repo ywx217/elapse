@@ -88,4 +88,23 @@ size_t TreeJobContainer::PopExpires(TimeUnit now) {
 	return expiredJobs.size();
 }
 
+void TreeJobContainer::IterJobs(JobPredicate pred) const {
+	for (auto const& it : jobs_) {
+		if (!pred(it)) {
+			break;
+		}
+	}
+}
+
+void TreeJobContainer::RemoveJobs(JobPredicate pred) {
+	auto& idIndex = boost::multi_index::get<id>(jobs_);
+	for (auto it = idIndex.begin(); it != idIndex.end();) {
+		if (pred(*it)) {
+			it = idIndex.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
 } // namespace elapse

@@ -80,6 +80,9 @@ public:
 	virtual bool Remove(JobId handle);
 	virtual void RemoveAll();
 	virtual size_t PopExpires(TimeUnit now);
+	virtual void IterJobs(JobPredicate pred) const;
+	virtual void RemoveJobs(JobPredicate pred);
+	virtual size_t Size() const { return jobs_.size(); }
 
 protected:
 	template <class Tag, class Key>

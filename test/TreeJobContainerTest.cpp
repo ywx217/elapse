@@ -50,6 +50,51 @@ TEST(TreeContainer, Remove) {
 	ASSERT_EQ(0, ctn.PopExpires(1000));
 }
 
+TEST(TreeContainer, Iterate) {
+	TreeJobContainer ctn;
+	auto cb = [](JobId id) {};
+	size_t counter = 0;
+	ctn.Add(1, cb);
+	ctn.Add(2, cb);
+	ctn.Add(3, cb);
+	ctn.Add(4, cb);
+
+	ctn.IterJobs([&counter](Job const& job) { ++counter; return false; });
+	ASSERT_EQ(1, counter);
+	ctn.IterJobs([&counter](Job const& job) { ++counter; return true; });
+	ASSERT_EQ(5, counter);
+}
+
+TEST(TreeContainer, RemoveAll) {
+	TreeJobContainer ctn;
+	auto cb = [](JobId id) {};
+	size_t counter = 0;
+	ctn.Add(1, cb);
+	ctn.Add(2, cb);
+	ctn.Add(3, cb);
+	ctn.Add(4, cb);
+
+	ASSERT_EQ(4, ctn.Size());
+	ctn.RemoveAll();
+	ASSERT_EQ(0, ctn.Size());
+}
+
+TEST(TreeContainer, RemoveIf) {
+	TreeJobContainer ctn;
+	auto cb = [](JobId id) {};
+	size_t counter = 0;
+	ctn.Add(1, cb);
+	ctn.Add(2, cb);
+	ctn.Add(3, cb);
+	ctn.Add(4, cb);
+
+	ASSERT_EQ(4, ctn.Size());
+	ctn.RemoveJobs([](Job const& job) { return job.id_ % 2 == 0; });
+	ASSERT_EQ(2, ctn.Size());
+	ctn.RemoveJobs([](Job const& job) { return job.id_ % 2 == 1; });
+	ASSERT_EQ(0, ctn.Size());
+}
+
 
 #ifdef BENCHMARK_ASIO_JOB_CONTAINER
 TEST(Scheduler, BenchTreeJobContainer) {
