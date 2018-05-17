@@ -76,7 +76,7 @@ public:
 	TreeJobContainer() : nextId_(1) {}
 	virtual ~TreeJobContainer() {}
 
-	virtual JobId Add(TimeUnit expireTime, ExpireCallback const& cb);
+	virtual JobId Add(TimeUnit expireTime, ECPtr&& cb);
 	virtual bool Remove(JobId handle);
 	virtual void RemoveAll();
 	virtual size_t PopExpires(TimeUnit now);

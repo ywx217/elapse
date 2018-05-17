@@ -34,12 +34,12 @@ For more information, please refer to <http://unlicense.org>
 
 namespace elapse {
 
-JobId TreeJobContainer::Add(TimeUnit expireTime, ExpireCallback const& cb) {
+JobId TreeJobContainer::Add(TimeUnit expireTime, ECPtr&& cb) {
 	JobId id = nextId_++;
 	while (nextId_ == 0 || jobs_.find(nextId_) != jobs_.end()) {
 		++nextId_;
 	}
-	jobs_.emplace(id, expireTime, cb);
+	jobs_.emplace(id, expireTime, std::move(cb));
 	#ifdef DEBUG_PRINT
 	std::cout << "  + job-" << id << " expire=" << expireTime << std::endl;
 	#endif
