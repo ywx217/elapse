@@ -278,7 +278,7 @@ TEST(Scheduler, LambdaCopyCount) {
 #if 1
 TEST(Scheduler, BenchAdd) {
 	Scheduler<int> s(new TreeJobContainer());
-	for (int j = 0; j < 1000000; ++j) {
+	for (int n = 0; n < 1; ++n) {
 		for (int i = 0; i < 1000000; ++i) {
 			s.ScheduleWithDelay(i, i, ECPtr(new EmptyCallback()));
 		}
@@ -287,12 +287,14 @@ TEST(Scheduler, BenchAdd) {
 
 TEST(Scheduler, BenchTick) {
 	Scheduler<int> s(new TreeJobContainer());
-	for (int i = 0; i < 1000; ++i) {
-		for (int j = 0; j < 1000; ++j) {
-			s.ScheduleWithDelay(j, j, ECPtr(new EmptyCallback()));
-		}
-		for (int j = 0; j < 1000; ++j) {
-			s.Advance(1); s.Tick();
+	for (int n = 0; n < 1; ++n) {
+		for (int i = 0; i < 1000; ++i) {
+			for (int j = 0; j < 1000; ++j) {
+				s.ScheduleWithDelay(j, j, ECPtr(new EmptyCallback()));
+			}
+			for (int j = 0; j < 1000; ++j) {
+				s.Advance(1); s.Tick();
+			}
 		}
 	}
 }
