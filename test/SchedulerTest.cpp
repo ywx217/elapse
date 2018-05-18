@@ -12,8 +12,6 @@ public:
 	}
 };
 
-const ECPtr EmptyCB(new EmptyCallback());
-
 TEST(Scheduler, Init) {
 	Scheduler<std::string> s(new TreeJobContainer());
 	s.ScheduleLambda("foo", 100, [](JobId id) {
@@ -277,12 +275,13 @@ TEST(Scheduler, LambdaCopyCount) {
 	std::cout << "copy=" << nCopy << " move=" << nMove << std::endl;
 }
 
-#if 0
+#if 1
 TEST(Scheduler, BenchAdd) {
-	return;
 	Scheduler<int> s(new TreeJobContainer());
-	for (int i = 0; i < 1000000; ++i) {
-		s.ScheduleWithDelayLambda(i, i, EmptyCB);
+	for (int j = 0; j < 1000000; ++j) {
+		for (int i = 0; i < 1000000; ++i) {
+			s.ScheduleWithDelay(i, i, ECPtr(new EmptyCallback()));
+		}
 	}
 }
 
@@ -290,7 +289,7 @@ TEST(Scheduler, BenchTick) {
 	Scheduler<int> s(new TreeJobContainer());
 	for (int i = 0; i < 1000; ++i) {
 		for (int j = 0; j < 1000; ++j) {
-			s.ScheduleWithDelayLambda(j, j, EmptyCB);
+			s.ScheduleWithDelay(j, j, ECPtr(new EmptyCallback()));
 		}
 		for (int j = 0; j < 1000; ++j) {
 			s.Advance(1); s.Tick();
