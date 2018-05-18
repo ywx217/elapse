@@ -257,7 +257,7 @@ template <class Key, class Hash>
 bool Scheduler<Key, Hash>::ReplaceJob(
 			Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr repeatConfig, ECPtr&& wrappedCallback) {
 	auto it = jobs_.find(alias);
-	auto id = container_->Add(expireTime, std::move(wrappedCallback));
+	auto id = container_->Add(std::max(expireTime, clock_->Now() + 1), std::move(wrappedCallback));
 	if (it == jobs_.end()) {
 		jobs_.emplace(alias, std::make_pair(id, repeatConfig));
 		return false;
