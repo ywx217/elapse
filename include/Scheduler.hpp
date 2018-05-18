@@ -68,7 +68,7 @@ public:
 	// schedule a new call with delay
 	void Schedule(Key const& alias, TimeUnit expireTime, ECPtr&& cb);
 	// schedule a new repeated callback
-	void ScheduleRepeat(Key const& alias, crontab::RepeatablePtr repeatConfig, ECPtr&& cb);
+	void ScheduleRepeat(Key const& alias, crontab::RepeatablePtr const& repeatConfig, ECPtr&& cb);
 	// cancel a call
 	bool Cancel(Key const& alias);
 	void CancelAll();
@@ -89,7 +89,7 @@ public:
 	void ScheduleLambda(Key const& alias, TimeUnit expireTime, Functor&& cb);
 	// schedule a new repeated callback
 	template <class Functor>
-	void ScheduleRepeatLambda(Key const& alias, crontab::RepeatablePtr repeatConfig, Functor&& cb);
+	void ScheduleRepeatLambda(Key const& alias, crontab::RepeatablePtr const& repeatConfig, Functor&& cb);
 	template <class Functor>
 	void ScheduleWithDelayLambda(Key const& alias, TimeUnit delayInMillis, Functor&& cb);
 	template <class Functor>
@@ -97,7 +97,7 @@ public:
 
 protected:
 	// replace a call (more effecient than cancel & add)
-	bool ReplaceJob(Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr repeatConfig, ECPtr&& wrappedCallback);
+	bool ReplaceJob(Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr const& repeatConfig, ECPtr&& wrappedCallback);
 	// callback triggered, remove from alias map
 	bool OnTriggered(Key const& alias, JobId id);
 
@@ -173,12 +173,12 @@ void Scheduler<Key, Hash>::Tick() {
 
 template <class Key, class Hash>
 void Scheduler<Key, Hash>::Schedule(Key const& alias, TimeUnit expireTime, ECPtr&& cb) {
-	ReplaceJob(alias, expireTime, nullptr, ECPtr(new ECOneTimeSchedule<Key, Hash>(this, alias, std::move(cb))));
+	ReplaceJob(alias, expireTime, crontab::NullRepeatablePtr, ECPtr(new ECOneTimeSchedule<Key, Hash>(this, alias, std::move(cb))));
 }
 
 template <class Key, class Hash>
 void Scheduler<Key, Hash>::ScheduleRepeat(
-			Key const& alias, crontab::RepeatablePtr repeatConfig, ECPtr&& cb) {
+			Key const& alias, crontab::RepeatablePtr const& repeatConfig, ECPtr&& cb) {
 	auto expireTime = repeatConfig->NextExpire(*clock_);
 	if (!expireTime) {
 		Cancel(alias);
@@ -237,7 +237,7 @@ void Scheduler<Key, Hash>::ScheduleLambda(Key const& alias, TimeUnit expireTime,
 
 template <class Key, class Hash>
 template <class Functor>
-void Scheduler<Key, Hash>::ScheduleRepeatLambda(Key const& alias, crontab::RepeatablePtr repeatConfig, Functor&& cb) {
+void Scheduler<Key, Hash>::ScheduleRepeatLambda(Key const& alias, crontab::RepeatablePtr const& repeatConfig, Functor&& cb) {
 	ScheduleRepeat(alias, repeatConfig, ELAPSE_CB_LAMBDA_WRAPPER(cb));
 }
 
@@ -255,7 +255,7 @@ void Scheduler<Key, Hash>::ScheduleAtLambda(Key const& alias, size_t hour, size_
 
 template <class Key, class Hash>
 bool Scheduler<Key, Hash>::ReplaceJob(
-			Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr repeatConfig, ECPtr&& wrappedCallback) {
+			Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr const& repeatConfig, ECPtr&& wrappedCallback) {
 	auto it = jobs_.find(alias);
 	auto id = container_->Add(std::max(expireTime, clock_->Now() + 1), std::move(wrappedCallback));
 	if (it == jobs_.end()) {

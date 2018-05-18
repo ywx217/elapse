@@ -124,6 +124,7 @@ public:
 };
 
 typedef std::shared_ptr<IRepeatable> RepeatablePtr;
+static const RepeatablePtr NullRepeatablePtr(nullptr);
 
 
 class Crontab : public IRepeatable {
