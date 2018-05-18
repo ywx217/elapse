@@ -246,3 +246,36 @@ TEST(Scheduler, CycleScheduleAndCancel) {
 	s.Advance(10000); s.Tick();
 	ASSERT_EQ(5, counter);
 }
+
+#if 1
+TEST(Scheduler, BenchAdd) {
+	Scheduler<int> s(new TreeJobContainer());
+	std::vector<int> v;
+	int size = 8;
+	v.resize(size);
+
+	for (int n = 0; n < 1; ++n) {
+		for (int i = 0; i < 1000000; ++i) {
+			s.ScheduleWithDelay(i, i, [&s, v, size](JobId id) {});
+		}
+	}
+}
+
+TEST(Scheduler, BenchTick) {
+	Scheduler<int> s(new TreeJobContainer());
+	std::vector<int> v;
+	int size = 8;
+	v.resize(size);
+
+	for (int n = 0; n < 1; ++n) {
+		for (int i = 0; i < 1000; ++i) {
+			for (int j = 0; j < 1000; ++j) {
+				s.ScheduleWithDelay(j, j, [&s, v, size](JobId id) {});
+			}
+			for (int j = 0; j < 1000; ++j) {
+				s.Advance(1); s.Tick();
+			}
+		}
+	}
+}
+#endif
