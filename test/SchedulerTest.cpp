@@ -40,15 +40,14 @@ TEST(Scheduler, CancelInCB) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
 	for (int i = 0; i < 10; ++i) {
-		s.ScheduleWithDelayLambda(i, i * 10, [&s, &counter, i](JobId id) {
+		s.ScheduleWithDelayLambda(i, (i + 1) * 10, [&s, &counter, i](JobId id) {
 			++counter;
 			s.Cancel(i);
 		});
 	}
 	for (int i = 0; i < 10; ++i) {
-		s.Tick();
+		s.Advance(10); s.Tick();
 		ASSERT_EQ(i + 1, counter);
-		s.Advance(10);
 	}
 }
 
@@ -281,10 +280,13 @@ TEST(Scheduler, BenchAdd) {
 	std::vector<int> v;
 	int size = 8;
 	v.resize(size);
-	for (int n = 0; n < 10; ++n) {
-		for (int i = 0; i < 100000; ++i) {
-			s.ScheduleWithDelayLambda(i, i, [&s, v, size](JobId id) {});
+	for (int nn = 0; nn < 1; ++nn) {
+		for (int n = 0; n < 10; ++n) {
+			for (int i = 0; i < 100000; ++i) {
+				s.ScheduleWithDelayLambda(i, i, [&s, v, size](JobId id) {});
+			}
 		}
+		s.CancelAll();
 	}
 }
 
@@ -298,8 +300,8 @@ TEST(Scheduler, BenchTick) {
 			for (int j = 0; j < 1000; ++j) {
 				s.ScheduleWithDelayLambda(j, j, [&s, v, size](JobId id) {});
 			}
-			for (int j = 0; j < 1000; ++j) {
-				s.Advance(1); s.Tick();
+			for (int j = 0; j < 100; ++j) {
+				s.Advance(10); s.Tick();
 			}
 		}
 	}
