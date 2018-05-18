@@ -281,8 +281,8 @@ TEST(Scheduler, BenchAdd) {
 	std::vector<int> v;
 	int size = 8;
 	v.resize(size);
-	for (int n = 0; n < 1; ++n) {
-		for (int i = 0; i < 1000000; ++i) {
+	for (int n = 0; n < 10; ++n) {
+		for (int i = 0; i < 100000; ++i) {
 			s.ScheduleWithDelayLambda(i, i, [&s, v, size](JobId id) {});
 		}
 	}

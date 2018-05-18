@@ -96,14 +96,10 @@ public:
 	void ScheduleAtLambda(Key const& alias, size_t hour, size_t minute, size_t second, Functor&& cb);
 
 protected:
-	bool OnTriggered(Key const& alias, JobId id) {
-		auto it = jobs_.find(alias);
-		if (it != jobs_.end()) {
-			jobs_.erase(it);
-			return true;
-		}
-		return false;
-	}
+	// replace a call (more effecient than cancel & add)
+	bool ReplaceJob(Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr repeatConfig, ECPtr&& wrappedCallback);
+	// callback triggered, remove from alias map
+	bool OnTriggered(Key const& alias, JobId id);
 
 	template <class Key, class Hash>
 	friend class ECOneTimeSchedule;
@@ -177,21 +173,18 @@ void Scheduler<Key, Hash>::Tick() {
 
 template <class Key, class Hash>
 void Scheduler<Key, Hash>::Schedule(Key const& alias, TimeUnit expireTime, ECPtr&& cb) {
-	Cancel(alias);
-	auto id = container_->Add(expireTime, ECPtr(new ECOneTimeSchedule<Key, Hash>(this, alias, std::move(cb))));
-	jobs_[alias] = std::make_pair(id, crontab::RepeatablePtr(nullptr));
+	ReplaceJob(alias, expireTime, nullptr, ECPtr(new ECOneTimeSchedule<Key, Hash>(this, alias, std::move(cb))));
 }
 
 template <class Key, class Hash>
 void Scheduler<Key, Hash>::ScheduleRepeat(
 			Key const& alias, crontab::RepeatablePtr repeatConfig, ECPtr&& cb) {
-	Cancel(alias);
 	auto expireTime = repeatConfig->NextExpire(*clock_);
 	if (!expireTime) {
+		Cancel(alias);
 		return;
 	}
-	auto id = container_->Add(expireTime, ECPtr(new ECRepeatSchedule<Key, Hash>(this, alias, std::move(cb))));
-	jobs_[alias] = std::make_pair(id, repeatConfig);
+	ReplaceJob(alias, expireTime, repeatConfig, ECPtr(new ECRepeatSchedule<Key, Hash>(this, alias, std::move(cb))));
 }
 
 template <class Key, class Hash>
@@ -258,6 +251,30 @@ template <class Key, class Hash>
 template <class Functor>
 void Scheduler<Key, Hash>::ScheduleAtLambda(Key const& alias, size_t hour, size_t minute, size_t second, Functor&& cb) {
 	ScheduleAt(alias, hour, minute, second, ELAPSE_CB_LAMBDA_WRAPPER(cb));
+}
+
+template <class Key, class Hash>
+bool Scheduler<Key, Hash>::ReplaceJob(
+			Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr repeatConfig, ECPtr&& wrappedCallback) {
+	auto it = jobs_.find(alias);
+	auto id = container_->Add(expireTime, std::move(wrappedCallback));
+	if (it == jobs_.end()) {
+		jobs_.emplace(alias, std::make_pair(id, repeatConfig));
+		return false;
+	}
+	container_->Remove(it->second.first);
+	it->second = std::make_pair(id, repeatConfig);
+	return true;
+}
+
+template <class Key, class Hash>
+bool Scheduler<Key, Hash>::OnTriggered(Key const& alias, JobId id) {
+	auto it = jobs_.find(alias);
+	if (it != jobs_.end()) {
+		jobs_.erase(it);
+		return true;
+	}
+	return false;
 }
 
 } // namespace elapse
