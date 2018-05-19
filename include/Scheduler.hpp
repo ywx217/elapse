@@ -49,7 +49,7 @@ public:
 	typedef std::unordered_map<Key, value_type, Hash> map_type;
 
 public:
-	Scheduler(JobContainer* containerPtr) : clock_(new Clock()), container_(containerPtr) {}
+	Scheduler(JobContainer* containerPtr) : clock_(new LazyClock()), container_(containerPtr) {}
 	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr) {}
 	virtual ~Scheduler() {
 		CancelAll();
