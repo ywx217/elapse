@@ -256,10 +256,11 @@ void Scheduler<Key, Hash>::ScheduleAtLambda(Key const& alias, size_t hour, size_
 template <class Key, class Hash>
 bool Scheduler<Key, Hash>::ReplaceJob(
 			Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr const& repeatConfig, ECPtr&& wrappedCallback) {
-	auto it = jobs_.find(alias);
 	auto id = container_->Add(std::max(expireTime, clock_->Now() + 1), std::move(wrappedCallback));
-	if (it == jobs_.end()) {
-		jobs_.emplace(alias, std::make_pair(id, repeatConfig));
+	bool isInserted;
+	map_type::iterator it;
+	std::tie(it, isInserted) = jobs_.insert(std::make_pair(alias, std::make_pair(id, repeatConfig)));
+	if (isInserted) {
 		return false;
 	}
 	container_->Remove(it->second.first);
