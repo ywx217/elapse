@@ -43,6 +43,7 @@ typedef std::function<bool(Job const&)> JobPredicate;
 
 class ExpireCallback {
 public:
+	virtual ~ExpireCallback() {}
 	virtual void operator()(JobId id) = 0;
 };
 
@@ -52,6 +53,7 @@ template <class Functor>
 class ECLambda : public ExpireCallback {
 public:
 	ECLambda(Functor&& f) : f_(std::forward<Functor>(f)) {}
+	virtual ~ECLambda() {}
 
 	virtual void operator()(JobId id) override {
 		f_(id);

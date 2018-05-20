@@ -7,6 +7,7 @@ using namespace elapse;
 
 class EmptyCallback : public ExpireCallback {
 public:
+	virtual ~EmptyCallback() {}
 	virtual void operator()(JobId id) override {
 		// do nothing.
 	}

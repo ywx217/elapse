@@ -119,6 +119,7 @@ public:
 		scheduler_(scheduler),
 		alias_(alias),
 		cb_(std::move(cb)) {}
+	virtual ~ECOneTimeSchedule() {}
 
 	virtual void operator()(JobId id) override {
 		scheduler_->OnTriggered(alias_, id);
@@ -138,6 +139,7 @@ public:
 		scheduler_(scheduler),
 		alias_(alias),
 		cb_(std::move(cb)) {}
+	virtual ~ECRepeatSchedule() {}
 
 	virtual void operator()(JobId id) override {
 		// TODO: test reschedule in the callback
