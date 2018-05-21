@@ -101,9 +101,9 @@ protected:
 	// callback triggered, remove from alias map
 	bool OnTriggered(Key const& alias, JobId id);
 
-	template <class Key, class Hash>
+	template <class K, class H>
 	friend class ECOneTimeSchedule;
-	template <class Key, class Hash>
+	template <class K, class H>
 	friend class ECRepeatSchedule;
 
 protected:
@@ -260,7 +260,7 @@ bool Scheduler<Key, Hash>::ReplaceJob(
 			Key const& alias, TimeUnit expireTime, crontab::RepeatablePtr const& repeatConfig, ECPtr&& wrappedCallback) {
 	auto id = container_->Add(std::max(expireTime, clock_->Now() + 1), std::move(wrappedCallback));
 	bool isInserted;
-	map_type::iterator it;
+	typename map_type::iterator it;
 	std::tie(it, isInserted) = jobs_.insert(std::make_pair(alias, std::make_pair(id, repeatConfig)));
 	if (isInserted) {
 		return false;
