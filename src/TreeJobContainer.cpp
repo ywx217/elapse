@@ -34,12 +34,12 @@ For more information, please refer to <http://unlicense.org>
 
 namespace elapse {
 
-JobId TreeJobContainer::Add(TimeUnit expireTime, ExpireCallback const& cb) {
+JobId TreeJobContainer::Add(TimeUnit expireTime, ECPtr&& cb) {
 	JobId id = nextId_++;
 	while (nextId_ == 0 || jobs_.find(nextId_) != jobs_.end()) {
 		++nextId_;
 	}
-	jobs_.emplace(id, expireTime, cb);
+	jobs_.emplace(id, expireTime, std::move(cb));
 	#ifdef DEBUG_PRINT
 	std::cout << "  + job-" << id << " expire=" << expireTime << std::endl;
 	#endif
@@ -63,29 +63,24 @@ void TreeJobContainer::RemoveAll() {
 }
 
 size_t TreeJobContainer::PopExpires(TimeUnit now) {
-	std::vector<JobId> expiredJobs;
+	size_t nExpires = 0;
+	JobId expiredId;
 	auto& expireIndex = boost::multi_index::get<expire>(jobs_);
 	auto& idIndex = boost::multi_index::get<id>(jobs_);
-	for (auto const& job : expireIndex) {
-		if (job.IsExpired(now)) {
-			expiredJobs.push_back(job.id_);
-		} else {
+	while (true) {
+		auto it = expireIndex.begin();
+		if (it == expireIndex.end() || !it->IsExpired(now)) {
 			break;
-		}
-	}
-
-	for (auto const& expiredId : expiredJobs) {
-		auto it = idIndex.find(expiredId);
-		if (it == idIndex.end()) {
-			continue;
 		}
 		#ifdef DEBUG_PRINT
 		std::cout << "[" << now << "] - job-" << it->id_ << " fired" << std::endl;
 		#endif
+		expiredId = it->id_;
 		it->Fire();
-		idIndex.erase(it);
+		idIndex.erase(expiredId);
+		++nExpires;
 	}
-	return expiredJobs.size();
+	return nExpires;
 }
 
 void TreeJobContainer::IterJobs(JobPredicate pred) const {

@@ -5,9 +5,17 @@
 
 using namespace elapse;
 
+class EmptyCallback : public ExpireCallback {
+public:
+	virtual ~EmptyCallback() {}
+	virtual void operator()(JobId id) override {
+		// do nothing.
+	}
+};
+
 TEST(Scheduler, Init) {
 	Scheduler<std::string> s(new TreeJobContainer());
-	s.Schedule("foo", 100, [](JobId id) {
+	s.ScheduleLambda("foo", 100, [](JobId id) {
 		EXPECT_TRUE(true);
 	});
 }
@@ -16,16 +24,15 @@ TEST(Scheduler, Init) {
 TEST(Scheduler, NormalSchedule) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback cb = [&counter](JobId id) {
-		++counter;
-	};
 	for (int i = 0; i < 10; ++i) {
-		s.ScheduleWithDelay(i, (i + 1) * 100, cb);
+		s.ScheduleWithDelayLambda(i, (i + 1) * 100, [&counter](JobId id) {
+			++counter;
+		});
 	}
 	for (int i = 0; i < 10; ++i) {
-		s.Advance(99); s.Tick();
+		s.Advance(98); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(1); s.Tick();
+		s.Advance(2); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 }
@@ -33,19 +40,15 @@ TEST(Scheduler, NormalSchedule) {
 TEST(Scheduler, CancelInCB) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback cb = [&counter](JobId id) {
-		++counter;
-	};
 	for (int i = 0; i < 10; ++i) {
-		s.ScheduleWithDelay(i, i * 10, [&s, &counter, i](JobId id) {
+		s.ScheduleWithDelayLambda(i, (i + 1) * 10, [&s, &counter, i](JobId id) {
 			++counter;
 			s.Cancel(i);
 		});
 	}
 	for (int i = 0; i < 10; ++i) {
-		s.Tick();
+		s.Advance(10); s.Tick();
 		ASSERT_EQ(i + 1, counter);
-		s.Advance(10);
 	}
 }
 
@@ -53,7 +56,7 @@ TEST(Scheduler, CancelAllInCB) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
 	for (int i = 0; i < 10; ++i) {
-		s.ScheduleWithDelay(i, 10, [&s, &counter](JobId id) {
+		s.ScheduleWithDelayLambda(i, 10, [&s, &counter](JobId id) {
 			++counter;
 			for (int i = 9; i >= 0; --i) {
 				s.Cancel(i);
@@ -69,7 +72,7 @@ TEST(Scheduler, CancelAllInCB2) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
 	for (int i = 0; i < 10; ++i) {
-		s.ScheduleWithDelay(i, 10, [&s, &counter](JobId id) {
+		s.ScheduleWithDelayLambda(i, 10, [&s, &counter](JobId id) {
 			++counter;
 			for (int i = 0; i < 10; ++i) {
 				s.Cancel(i);
@@ -84,27 +87,29 @@ TEST(Scheduler, CancelAllInCB2) {
 TEST(Scheduler, CancelSingleInCB) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
-	s.ScheduleWithDelay(1, 10, [&s, &counter](JobId id) {
+	s.ScheduleWithDelayLambda(1, 10, [&s, &counter](JobId id) {
 		++counter;
 		s.Cancel(1);
 	});
-	s.Advance(9); s.Tick();
+	s.Advance(8); s.Tick();
 	ASSERT_EQ(0, counter);
-	s.Advance(1); s.Tick();
+	s.Advance(2); s.Tick();
 	ASSERT_EQ(1, counter);
 }
 
 TEST(Scheduler, ScheduleInCB) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback *pCB = nullptr;
-	ExpireCallback cb = [&counter, &s, &pCB](JobId id) {
-		s.ScheduleWithDelay(1, 10, *pCB);
+	ECPtr pCB;
+	auto cb = [&counter, &s, &pCB](JobId id) {
+		s.ScheduleWithDelayLambda(1, 10, [&pCB](JobId id) {
+			(*pCB)(id);
+		});
 		++counter;
 	};
-	pCB = &cb;
-	s.ScheduleWithDelay(1, 10, cb);
-	
+	pCB = WrapLambdaPtr(cb);
+	s.ScheduleWithDelayLambda(1, 10, cb);
+
 	for (int i = 0; i < 1024; ++i) {
 		s.Advance(8); s.Tick();
 		ASSERT_EQ(i, counter);
@@ -116,15 +121,17 @@ TEST(Scheduler, ScheduleInCB) {
 TEST(Scheduler, ScheduleImmediatlyInCB) {
 	Scheduler<int> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback *pCB = nullptr;
-	ExpireCallback cb = [&counter, &s, &pCB](JobId id) {
+	ECPtr pCB = nullptr;
+	auto cb = [&counter, &s, &pCB](JobId id) {
 		s.Cancel(1);
-		s.ScheduleWithDelay(1, 0, *pCB);
+		s.ScheduleWithDelayLambda(1, 0, [&pCB](JobId id) {
+			(*pCB)(id);
+		});
 		++counter;
 	};
-	pCB = &cb;
-	s.ScheduleWithDelay(1, 10, cb);
-	
+	pCB = WrapLambdaPtr(cb);
+	s.ScheduleWithDelayLambda(1, 10, cb);
+
 	for (int i = 0; i < 1024; ++i) {
 		ASSERT_EQ(i, counter);
 		s.Advance(10);
@@ -135,12 +142,11 @@ TEST(Scheduler, ScheduleImmediatlyInCB) {
 TEST(Scheduler, CrontabSchedule) {
 	Scheduler<std::string> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback cb = [&counter](JobId id) { ++counter; };
 
 	auto cron = std::make_shared<crontab::Crontab>();
 	cron->SetAll();
 	cron->Second().Clear().SetSingle(0);
-	s.ScheduleRepeat("foo", cron, cb);
+	s.ScheduleRepeatLambda("foo", cron, [&counter](JobId id) { ++counter; });
 
 	for (int i = 0; i < 1024; ++i) {
 		s.Tick();
@@ -153,17 +159,16 @@ TEST(Scheduler, CrontabCancel) {
 	const std::string alias("foo");
 	Scheduler<std::string> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback cb = [&counter, &s, &alias](JobId id) {
-		++counter;
-		if (counter >= 100) {
-			s.Cancel(alias);
-		}
-	};
 
 	auto cron = std::make_shared<crontab::Crontab>();
 	cron->SetAll();
 	cron->Second().Clear().SetSingle(0);
-	s.ScheduleRepeat(alias, cron, cb);
+	s.ScheduleRepeatLambda(alias, cron, [&counter, &s, &alias](JobId id) {
+		++counter;
+		if (counter >= 100) {
+			s.Cancel(alias);
+		}
+	});
 
 	for (int i = 0; i < 1024; ++i) {
 		s.Tick();
@@ -176,17 +181,16 @@ TEST(Scheduler, CrontabScheduleAnother) {
 	const std::string alias("foo");
 	Scheduler<std::string> s(new TreeJobContainer());
 	size_t counter = 0;
-	ExpireCallback cb = [&counter, &s, &alias](JobId id) {
-		++counter;
-		if (counter >= 100) {
-			s.ScheduleWithDelay(alias, 100, [&counter](JobId id) { ++counter; });
-		}
-	};
 
 	auto cron = std::make_shared<crontab::Crontab>();
 	cron->SetAll();
 	cron->Second().Clear().SetSingle(0);
-	s.ScheduleRepeat(alias, cron, cb);
+	s.ScheduleRepeatLambda(alias, cron, [&counter, &s, &alias](JobId id) {
+		++counter;
+		if (counter >= 100) {
+			s.ScheduleWithDelayLambda(alias, 100, [&counter](JobId id) { ++counter; });
+		}
+	});
 
 	for (int i = 0; i < 1024; ++i) {
 		if (i < 100) {
@@ -194,9 +198,9 @@ TEST(Scheduler, CrontabScheduleAnother) {
 			s.Tick();
 			ASSERT_EQ(i + 1, counter);
 		} else if (i == 100) {
-			s.Advance(99); s.Tick();
+			s.Advance(98); s.Tick();
 			ASSERT_EQ(100, counter);
-			s.Advance(1); s.Tick();
+			s.Advance(2); s.Tick();
 			ASSERT_EQ(101, counter);
 		} else {
 			s.Advance(100); s.Tick();
@@ -210,15 +214,14 @@ TEST(Scheduler, CycleSchedule) {
 	size_t counter = 0;
 	auto repeatable = std::make_shared<crontab::Cycle>(100, 10);
 
-	ExpireCallback cb = [&s, &counter](JobId id) {
+	s.ScheduleRepeatLambda(1, repeatable, [&s, &counter](JobId id) {
 		++counter;
-	};
-	s.ScheduleRepeat(1, repeatable, cb);
+	});
 
 	for (int i = 0; i < 10; ++i) {
-		s.Advance(99); s.Tick();
+		s.Advance(98); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(1); s.Tick();
+		s.Advance(2); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 	s.Advance(10000); s.Tick();
@@ -230,19 +233,78 @@ TEST(Scheduler, CycleScheduleAndCancel) {
 	size_t counter = 0;
 	auto repeatable = std::make_shared<crontab::Cycle>(100, 10);
 
-	ExpireCallback cb = [&s, &counter](JobId id) {
+	s.ScheduleRepeatLambda(1, repeatable, [&s, &counter](JobId id) {
 		if (++counter >= 5) {
 			s.Cancel(1);
 		}
-	};
-	s.ScheduleRepeat(1, repeatable, cb);
+	});
 
 	for (int i = 0; i < 5; ++i) {
-		s.Advance(99); s.Tick();
+		s.Advance(98); s.Tick();
 		ASSERT_EQ(i, counter);
-		s.Advance(1); s.Tick();
+		s.Advance(2); s.Tick();
 		ASSERT_EQ(i + 1, counter);
 	}
 	s.Advance(10000); s.Tick();
 	ASSERT_EQ(5, counter);
 }
+
+class ConstructCounter {
+public:
+	ConstructCounter(size_t& copyCount, size_t& moveCount) : copy_(copyCount), move_(moveCount) {}
+	ConstructCounter(ConstructCounter&& c) : copy_(c.copy_), move_(c.move_) {
+		++move_;
+	}
+	ConstructCounter(ConstructCounter const& c) : copy_(c.copy_), move_(c.move_) {
+		++copy_;
+	}
+
+private:
+	size_t& copy_;
+	size_t& move_;
+};
+
+TEST(Scheduler, LambdaCopyCount) {
+	Scheduler<int> s(new TreeJobContainer());
+	size_t nCopy = 0, nMove = 0;
+	ConstructCounter c(nCopy, nMove);
+	s.ScheduleWithDelayLambda(1, 100, [c](JobId id) {
+		return;
+	});
+	s.Advance(1000); s.Tick();
+	std::cout << "copy=" << nCopy << " move=" << nMove << std::endl;
+}
+
+#if 1
+TEST(Scheduler, BenchAdd) {
+	Scheduler<int> s(new TreeJobContainer());
+	std::vector<int> v;
+	int size = 8;
+	v.resize(size);
+	for (int nn = 0; nn < 1; ++nn) {
+		for (int n = 0; n < 10; ++n) {
+			for (int i = 0; i < 100000; ++i) {
+				s.ScheduleWithDelayLambda(i, i, [&s, v, size](JobId id) {});
+			}
+		}
+		s.CancelAll();
+	}
+}
+
+TEST(Scheduler, BenchTick) {
+	Scheduler<int> s(new TreeJobContainer());
+	std::vector<int> v;
+	int size = 8;
+	v.resize(size);
+	for (int n = 0; n < 1; ++n) {
+		for (int i = 0; i < 1000; ++i) {
+			for (int j = 0; j < 1000; ++j) {
+				s.ScheduleWithDelayLambda(j, j, [&s, v, size](JobId id) {});
+			}
+			for (int j = 0; j < 100; ++j) {
+				s.Advance(10); s.Tick();
+			}
+		}
+	}
+}
+#endif

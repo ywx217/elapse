@@ -36,12 +36,12 @@ bool Job::IsExpired(TimeUnit now) const {
 }
 
 void Job::Fire() const {
-	cb_(id_);
+	(*cb_)(id_);
 }
 
 bool Job::AutoFire(TimeUnit now) const {
 	if (IsExpired(now)) {
-		cb_(id_);
+		(*cb_)(id_);
 		return true;
 	}
 	return false;

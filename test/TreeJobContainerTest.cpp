@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include <list>
 #include "TreeJobContainer.hpp"
-#ifdef BENCHMARK_JOB_CONTAINERS
+#ifdef BENCHMARK_ASIO_JOB_CONTAINER
 #include "AsioJobContainer.hpp"
 #endif
 
@@ -13,10 +13,10 @@ TEST(TreeContainer, InsertAndExpire) {
 	TimeUnit now = TIME_BEGIN;
 	std::list<JobId> jobSequence;
 	for (int i = 0; i < 100; ++i, now += 100) {
-		jobSequence.push_back(ctn.Add(now, [&jobSequence](JobId id) {
+		jobSequence.push_back(ctn.Add(now, WrapLambdaPtr([&jobSequence](JobId id) {
 			ASSERT_EQ(id, jobSequence.front());
 			jobSequence.pop_front();
-		}));
+		})));
 	}
 	now = TIME_BEGIN;
 	for (int i = 0; i < 10; ++i, now += 100) {
@@ -36,10 +36,10 @@ TEST(TreeContainer, InsertAndExpire) {
 TEST(TreeContainer, Remove) {
 	TreeJobContainer ctn;
 	auto cb = [](JobId id) {};
-	auto id_1 = ctn.Add(1, cb);
-	auto id_2 = ctn.Add(2, cb);
-	auto id_3 = ctn.Add(3, cb);
-	auto id_4 = ctn.Add(4, cb);
+	auto id_1 = ctn.Add(1, WrapLambdaPtr(cb));
+	auto id_2 = ctn.Add(2, WrapLambdaPtr(cb));
+	auto id_3 = ctn.Add(3, WrapLambdaPtr(cb));
+	auto id_4 = ctn.Add(4, WrapLambdaPtr(cb));
 
 	ASSERT_TRUE(ctn.Remove(id_2));
 	ASSERT_FALSE(ctn.Remove(id_2));
@@ -54,10 +54,10 @@ TEST(TreeContainer, Iterate) {
 	TreeJobContainer ctn;
 	auto cb = [](JobId id) {};
 	size_t counter = 0;
-	ctn.Add(1, cb);
-	ctn.Add(2, cb);
-	ctn.Add(3, cb);
-	ctn.Add(4, cb);
+	ctn.Add(1, WrapLambdaPtr(cb));
+	ctn.Add(2, WrapLambdaPtr(cb));
+	ctn.Add(3, WrapLambdaPtr(cb));
+	ctn.Add(4, WrapLambdaPtr(cb));
 
 	ctn.IterJobs([&counter](Job const& job) { ++counter; return false; });
 	ASSERT_EQ(1, counter);
@@ -69,10 +69,10 @@ TEST(TreeContainer, RemoveAll) {
 	TreeJobContainer ctn;
 	auto cb = [](JobId id) {};
 	size_t counter = 0;
-	ctn.Add(1, cb);
-	ctn.Add(2, cb);
-	ctn.Add(3, cb);
-	ctn.Add(4, cb);
+	ctn.Add(1, WrapLambdaPtr(cb));
+	ctn.Add(2, WrapLambdaPtr(cb));
+	ctn.Add(3, WrapLambdaPtr(cb));
+	ctn.Add(4, WrapLambdaPtr(cb));
 
 	ASSERT_EQ(4, ctn.Size());
 	ctn.RemoveAll();
@@ -83,10 +83,10 @@ TEST(TreeContainer, RemoveIf) {
 	TreeJobContainer ctn;
 	auto cb = [](JobId id) {};
 	size_t counter = 0;
-	ctn.Add(1, cb);
-	ctn.Add(2, cb);
-	ctn.Add(3, cb);
-	ctn.Add(4, cb);
+	ctn.Add(1, WrapLambdaPtr(cb));
+	ctn.Add(2, WrapLambdaPtr(cb));
+	ctn.Add(3, WrapLambdaPtr(cb));
+	ctn.Add(4, WrapLambdaPtr(cb));
 
 	ASSERT_EQ(4, ctn.Size());
 	ctn.RemoveJobs([](Job const& job) { return job.id_ % 2 == 0; });

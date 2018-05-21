@@ -30,15 +30,49 @@ For more information, please refer to <http://unlicense.org>
 #include <cstdint>
 #include <vector>
 #include <functional>
+#include <memory>
 
 
 namespace elapse {
 
 typedef std::uint64_t TimeUnit;
 typedef std::uint64_t JobId;
-typedef std::function<void(JobId)> ExpireCallback;
 
 class Job;
 typedef std::function<bool(Job const&)> JobPredicate;
+
+class ExpireCallback {
+public:
+	virtual ~ExpireCallback() {}
+	virtual void operator()(JobId id) = 0;
+};
+
+typedef std::unique_ptr<ExpireCallback> ECPtr;
+
+template <class Functor>
+class ECLambda : public ExpireCallback {
+public:
+	ECLambda(Functor&& f) : f_(std::forward<Functor>(f)) {}
+	virtual ~ECLambda() {}
+
+	virtual void operator()(JobId id) override {
+		f_(id);
+	}
+
+private:
+	Functor f_;
+};
+
+template <class Functor>
+inline ECLambda<Functor> WrapLambda(Functor&& f) {
+	return ECLambda<Functor>(std::forward<Functor>(f));
+}
+
+template <class Functor>
+inline ECPtr WrapLambdaPtr(Functor&& f) {
+	return ECPtr(new ECLambda<Functor>(std::forward<Functor>(f)));
+}
+
+#define ELAPSE_CB_LAMBDA_WRAPPER(varname) ECPtr(new ECLambda<Functor>(std::forward<Functor>(varname)))
 
 } // namespace elapse

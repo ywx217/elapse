@@ -29,6 +29,7 @@ For more information, please refer to <http://unlicense.org>
 */
 #include <ctime>
 #include <chrono>
+#include <memory>
 #include "JobCommons.hpp"
 
 
@@ -41,21 +42,48 @@ TimeUnit ToTimeUnit(std::time_t tm);
 class Clock {
 public:
 	typedef std::chrono::system_clock clock_source;
+	typedef std::chrono::time_point<clock_source> time_point;
 
 public:
 	Clock() : offsetInMillis_(0) {}
 	virtual ~Clock() {}
 
 	// get current clock time
-	TimeUnit Now() const;
-	std::time_t NowTimeT() const;
-	std::chrono::time_point<clock_source> TimePoint() const;
+	virtual TimeUnit Now() const;
+	virtual std::time_t NowTimeT() const;
+	virtual time_point TimePoint() const;
 	// adjust clock with advance
-	void Advance(TimeOffset delta);
-	// crontab and localtime support
+	virtual void Advance(TimeOffset delta);
 
 private:
 	TimeOffset offsetInMillis_;
+};
+
+template <class T>
+struct LazyValue {
+	bool isDirty;
+	T value;
+
+	LazyValue() : isDirty(true) {}
+};
+
+class LazyClock : public Clock {
+public:
+	LazyClock() { Refresh(); }
+	virtual ~LazyClock() {}
+
+	virtual TimeUnit Now() const override;
+	virtual std::time_t NowTimeT() const override;
+	virtual time_point TimePoint() const override;
+	virtual void Advance(TimeOffset delta) override;
+
+private:
+	void Refresh();
+
+private:
+	TimeUnit lazyNow_;
+	std::time_t lazyTimeT_;
+	time_point lazyTimePoint_;
 };
 
 } // namespace elapse

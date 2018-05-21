@@ -76,42 +76,46 @@ target_link_libraries(${PROJECT_NAME_STR} ${COMMON_LIBRARY})
 #-------------------
 # Test
 #-------------------
-add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
+if (ELAPSE_SKIP_TEST)
+    message("Elapse test skipped.")
+else (ELAPSE_SKIP_TEST)
+    add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
 
-add_definitions(${MSVC_COMPILER_DEFS})
-enable_testing()
-set(PROJECT_TEST_NAME ${PROJECT_NAME_STR}_test)
-include_directories(${GTEST_INCLUDE_DIRS})
+    add_definitions(${MSVC_COMPILER_DEFS})
+    enable_testing()
+    set(PROJECT_TEST_NAME ${PROJECT_NAME_STR}_test)
+    include_directories(${GTEST_INCLUDE_DIRS})
 
-file(GLOB TEST_SRC_FILES ${PROJECT_SOURCE_DIR}/test/*.cpp)
-add_executable(${PROJECT_TEST_NAME} ${TEST_SRC_FILES})
-add_dependencies(${PROJECT_TEST_NAME} ${PROJECT_NAME_STR} googletest)
+    file(GLOB TEST_SRC_FILES ${PROJECT_SOURCE_DIR}/test/*.cpp)
+    add_executable(${PROJECT_TEST_NAME} ${TEST_SRC_FILES})
+    add_dependencies(${PROJECT_TEST_NAME} ${PROJECT_NAME_STR} googletest)
 
 
-if(WIN32 OR XCODE)
-    if (XCODE)
-        set(GTEST_FIND_LIB_SUFFIXES .a)
-        set(GTEST_DEBUG_SUFFIX "d")
-    else(XCODE)
-        set(GTEST_FIND_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-        set(GTEST_DEBUG_SUFFIX "")
-    endif(XCODE)
-    target_link_libraries(${PROJECT_TEST_NAME}
-        debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${GTEST_DEBUG_SUFFIX}${GTEST_FIND_LIB_SUFFIXES}
-        optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${GTEST_FIND_LIB_SUFFIXES}
-        )
-    target_link_libraries(${PROJECT_TEST_NAME}
-        debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${GTEST_DEBUG_SUFFIX}${GTEST_FIND_LIB_SUFFIXES}
-        optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${GTEST_FIND_LIB_SUFFIXES}
-        )
-else()
-    target_link_libraries(${PROJECT_TEST_NAME}
-        ${GTEST_LIBS_DIR}/libgtest.a
-        ${GTEST_LIBS_DIR}/libgtest_main.a
-        )
-endif()
+    if(WIN32 OR XCODE)
+        if (XCODE)
+            set(GTEST_FIND_LIB_SUFFIXES .a)
+            set(GTEST_DEBUG_SUFFIX "d")
+        else(XCODE)
+            set(GTEST_FIND_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
+            set(GTEST_DEBUG_SUFFIX "")
+        endif(XCODE)
+        target_link_libraries(${PROJECT_TEST_NAME}
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${GTEST_DEBUG_SUFFIX}${GTEST_FIND_LIB_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${GTEST_FIND_LIB_SUFFIXES}
+            )
+        target_link_libraries(${PROJECT_TEST_NAME}
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${GTEST_DEBUG_SUFFIX}${GTEST_FIND_LIB_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${GTEST_FIND_LIB_SUFFIXES}
+            )
+    else()
+        target_link_libraries(${PROJECT_TEST_NAME}
+            ${GTEST_LIBS_DIR}/libgtest.a
+            ${GTEST_LIBS_DIR}/libgtest_main.a
+            )
+    endif()
 
-message("common library:::${COMMON_LIBRARY}")
-target_link_libraries(${PROJECT_TEST_NAME} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_NAME_STR})
+    message("common library:::${COMMON_LIBRARY}")
+    target_link_libraries(${PROJECT_TEST_NAME} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_NAME_STR})
 
-add_test(test1 ${PROJECT_TEST_NAME})
+    add_test(test1 ${PROJECT_TEST_NAME})
+endif (ELAPSE_SKIP_TEST)

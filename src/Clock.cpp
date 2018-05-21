@@ -47,7 +47,7 @@ std::time_t Clock::NowTimeT() const {
 	return std::chrono::system_clock::to_time_t(TimePoint());
 }
 
-std::chrono::time_point<Clock::clock_source> Clock::TimePoint() const {
+Clock::time_point Clock::TimePoint() const {
 	return clock_source::now() + std::chrono::milliseconds(offsetInMillis_);
 }
 
@@ -59,6 +59,29 @@ void Clock::Advance(TimeOffset delta) {
 #ifdef DEBUG_PRINT
 	std::cout << "  clock adjust " << before << " -> " << Now() << std::endl;
 #endif
+}
+
+TimeUnit LazyClock::Now() const {
+	return lazyNow_;
+}
+
+std::time_t LazyClock::NowTimeT() const {
+	return lazyTimeT_;
+}
+
+LazyClock::time_point LazyClock::TimePoint() const {
+	return lazyTimePoint_;
+}
+
+void LazyClock::Advance(TimeOffset delta) {
+	Clock::Advance(delta);
+	Refresh();
+}
+
+void LazyClock::Refresh() {
+	lazyTimePoint_ = Clock::TimePoint();
+	lazyNow_ = Clock::Now();
+	lazyTimeT_ = Clock::NowTimeT();
 }
 
 } // namespace elapse

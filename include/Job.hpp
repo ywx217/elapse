@@ -34,10 +34,10 @@ namespace elapse {
 
 class Job {
 public:
-	Job(JobId id, TimeUnit expire, ExpireCallback const& cb) :
+	Job(JobId id, TimeUnit expire, ECPtr&& cb) :
 		id_(id),
 		expire_(expire),
-		cb_(cb) {}
+		cb_(std::move(cb)) {}
 	virtual ~Job() {}
 
 	bool IsExpired(TimeUnit now) const;
@@ -49,7 +49,7 @@ public:
 	TimeUnit expire_;
 
 private:
-	ExpireCallback cb_;
+	ECPtr cb_;
 };
 
 } // namespace elapse
