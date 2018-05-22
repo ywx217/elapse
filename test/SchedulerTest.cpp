@@ -275,6 +275,27 @@ TEST(Scheduler, LambdaCopyCount) {
 	std::cout << "copy=" << nCopy << " move=" << nMove << std::endl;
 }
 
+TEST(Scheduler, DestroyInNormal) {
+	auto scheduler = std::make_shared<Scheduler<int>>(new TreeJobContainer());
+	scheduler->ScheduleWithDelayLambda(1, 1, [&scheduler](JobId id) {
+		scheduler.reset();
+	});
+	scheduler->Advance(1000); scheduler->Tick();
+	ASSERT_FALSE(scheduler);
+}
+
+TEST(Scheduler, DestroyInRepeat) {
+	auto scheduler = std::make_shared<Scheduler<int>>(new TreeJobContainer());
+	int count = 0;
+	scheduler->ScheduleRepeatLambda(1, std::make_shared<crontab::Cycle>(1, -1), [&scheduler, &count](JobId id) {
+		++count;
+		scheduler.reset();
+	});
+	scheduler->Advance(1000); scheduler->Tick();
+	ASSERT_EQ(1, count);
+	ASSERT_FALSE(scheduler);
+}
+
 #if 1
 TEST(Scheduler, BenchAdd) {
 	Scheduler<int> s(new TreeJobContainer());

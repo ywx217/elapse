@@ -59,7 +59,7 @@ bool Crontab::FindNext(std::time_t& timestamp, int offset) const {
 	}
 	now = *p;
 
-	size_t next;
+	int next;
 	while (true) {
 		// second
 		if (!second_.NextFit(now.tm_sec, next)) {

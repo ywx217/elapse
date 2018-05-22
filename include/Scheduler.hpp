@@ -49,10 +49,14 @@ public:
 	typedef std::unordered_map<Key, value_type, Hash> map_type;
 
 public:
-	Scheduler(JobContainer* containerPtr) : clock_(new LazyClock()), container_(containerPtr) {}
-	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr) {}
+	Scheduler(JobContainer* containerPtr) : clock_(new LazyClock()), container_(containerPtr), destroyFlag_(nullptr) {}
+	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr), destroyFlag_(nullptr) {}
 	virtual ~Scheduler() {
 		CancelAll();
+		if (destroyFlag_) {
+			*destroyFlag_ = true;
+			destroyFlag_ = nullptr;
+		}
 	}
 
 	// member variable accessing
@@ -110,6 +114,7 @@ protected:
 	std::shared_ptr<Clock> clock_;
 	map_type jobs_;
 	std::shared_ptr<JobContainer> container_;
+	bool *destroyFlag_;
 };
 
 template <class Key, class Hash>
@@ -139,16 +144,27 @@ public:
 		scheduler_(scheduler),
 		alias_(alias),
 		cb_(std::move(cb)) {}
-	virtual ~ECRepeatSchedule() {}
+	virtual ~ECRepeatSchedule() {
+		scheduler_ = nullptr;
+	}
 
 	virtual void operator()(JobId id) override {
 		// TODO: test reschedule in the callback
+		if (!scheduler_) {
+			return;
+		}
 		auto it = scheduler_->jobs_.find(alias_);
 		if (it == scheduler_->jobs_.end()) {
 			return;
 		}
+		bool destroyFlag = false;
 		it->second.first = 0;
+		scheduler_->destroyFlag_ = &destroyFlag;
 		(*cb_)(id);
+		if (destroyFlag) {
+			return;
+		}
+		scheduler_->destroyFlag_ = nullptr;
 		it = scheduler_->jobs_.find(alias_);
 		if (it == scheduler_->jobs_.end() || it->second.first != 0 || !it->second.second) {
 			return;
