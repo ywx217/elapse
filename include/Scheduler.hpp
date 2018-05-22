@@ -49,13 +49,13 @@ public:
 	typedef std::unordered_map<Key, value_type, Hash> map_type;
 
 public:
-	Scheduler(JobContainer* containerPtr) : clock_(new LazyClock()), container_(containerPtr), firingCB_(nullptr) {}
-	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr), firingCB_(nullptr) {}
+	Scheduler(JobContainer* containerPtr) : clock_(new LazyClock()), container_(containerPtr), destroyFlag_(nullptr) {}
+	Scheduler(std::shared_ptr<Clock> clock, std::shared_ptr<JobContainer> containerPtr) : clock_(clock), container_(containerPtr), destroyFlag_(nullptr) {}
 	virtual ~Scheduler() {
 		CancelAll();
-		if (firingCB_) {
-			firingCB_->Release();
-			firingCB_ = nullptr;
+		if (destroyFlag_) {
+			*destroyFlag_ = true;
+			destroyFlag_ = nullptr;
 		}
 	}
 
@@ -114,7 +114,7 @@ protected:
 	std::shared_ptr<Clock> clock_;
 	map_type jobs_;
 	std::shared_ptr<JobContainer> container_;
-	ExpireCallback *firingCB_;
+	bool *destroyFlag_;
 };
 
 template <class Key, class Hash>
@@ -144,7 +144,9 @@ public:
 		scheduler_(scheduler),
 		alias_(alias),
 		cb_(std::move(cb)) {}
-	virtual ~ECRepeatSchedule() {}
+	virtual ~ECRepeatSchedule() {
+		scheduler_ = nullptr;
+	}
 
 	virtual void operator()(JobId id) override {
 		// TODO: test reschedule in the callback
@@ -155,22 +157,19 @@ public:
 		if (it == scheduler_->jobs_.end()) {
 			return;
 		}
+		bool destroyFlag = false;
 		it->second.first = 0;
-		scheduler_->firingCB_ = this;
+		scheduler_->destroyFlag_ = &destroyFlag;
 		(*cb_)(id);
-		if (!scheduler_) {
+		if (destroyFlag) {
 			return;
 		}
-		scheduler_->firingCB_ = nullptr;
+		scheduler_->destroyFlag_ = nullptr;
 		it = scheduler_->jobs_.find(alias_);
 		if (it == scheduler_->jobs_.end() || it->second.first != 0 || !it->second.second) {
 			return;
 		}
 		scheduler_->ScheduleRepeat(alias_, it->second.second, std::move(cb_));
-	}
-
-	virtual void Release() override {
-		scheduler_ = nullptr;
 	}
 
 private:

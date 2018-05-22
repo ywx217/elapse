@@ -45,7 +45,6 @@ class ExpireCallback {
 public:
 	virtual ~ExpireCallback() {}
 	virtual void operator()(JobId id) = 0;
-	virtual void Release() {}
 };
 
 typedef std::unique_ptr<ExpireCallback> ECPtr;

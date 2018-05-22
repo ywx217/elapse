@@ -34,6 +34,13 @@ For more information, please refer to <http://unlicense.org>
 
 namespace elapse {
 
+TreeJobContainer::~TreeJobContainer() {
+	if (destroyFlag_) {
+		*destroyFlag_ = true;
+		destroyFlag_ = nullptr;
+	}
+}
+
 JobId TreeJobContainer::Add(TimeUnit expireTime, ECPtr&& cb) {
 	JobId id = nextId_++;
 	while (nextId_ == 0 || jobs_.find(nextId_) != jobs_.end()) {
@@ -67,6 +74,7 @@ size_t TreeJobContainer::PopExpires(TimeUnit now) {
 	JobId expiredId;
 	auto& expireIndex = boost::multi_index::get<expire>(jobs_);
 	auto& idIndex = boost::multi_index::get<id>(jobs_);
+	bool destroyWhenFiring = false;
 	while (true) {
 		auto it = expireIndex.begin();
 		if (it == expireIndex.end() || !it->IsExpired(now)) {
@@ -76,7 +84,12 @@ size_t TreeJobContainer::PopExpires(TimeUnit now) {
 		std::cout << "[" << now << "] - job-" << it->id_ << " fired" << std::endl;
 		#endif
 		expiredId = it->id_;
+		destroyFlag_ = &destroyWhenFiring;
 		it->Fire();
+		if (destroyWhenFiring) {
+			return nExpires;
+		}
+		destroyFlag_ = nullptr;
 		idIndex.erase(expiredId);
 		++nExpires;
 	}
