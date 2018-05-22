@@ -83,6 +83,15 @@ public:
 		return fits_[idx - BaseOffset];
 	}
 
+	bool NextFit(int idx, int& result) const {
+		size_t r = 0;
+		if (!NextFit(idx, r)) {
+			return false;
+		}
+		result = static_cast<int>(r);
+		return true;
+	}
+
 	bool NextFit(std::size_t idx, std::size_t& result) const {
 		if (idx < BaseOffset || idx - BaseOffset >= Bits) {
 			return false;
