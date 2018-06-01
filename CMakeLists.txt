@@ -34,7 +34,7 @@ endif()
 #-------------------
 set(Boost_USE_STATIC_LIBS OFF CACHE BOOL "use static libraries from Boost")
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost)
+find_package(Boost REQUIRED COMPONENTS system)
 message("boost found: include=${Boost_INCLUDE_DIRS} lib=${Boost_LIBRARIES}")
 
 #-------------------
