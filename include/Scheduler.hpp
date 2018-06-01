@@ -32,6 +32,9 @@ For more information, please refer to <http://unlicense.org>
 #include <memory>
 #include <type_traits>
 #include <boost/noncopyable.hpp>
+#ifdef SCHEDULER_USE_POOL_ALLOCATOR
+#include <boost/pool/pool_alloc.hpp>
+#endif
 #include "JobCommons.hpp"
 #include "JobContainer.hpp"
 #include "Clock.hpp"
@@ -131,6 +134,18 @@ public:
 		(*cb_)(id);
 	}
 
+#ifdef SCHEDULER_USE_POOL_ALLOCATOR
+public:
+	void* operator new(size_t) { return pool_.allocate(); }
+	void operator delete(void *p) { pool_.deallocate(static_cast<ECOneTimeSchedule<Key, Hash>*>(p)); }
+
+private:
+	void* operator new[](size_t);
+	void operator delete[](void*);
+
+	static boost::fast_pool_allocator<ECOneTimeSchedule<Key, Hash>> pool_;
+#endif
+
 private:
 	Scheduler<Key, Hash> *scheduler_;
 	Key alias_;
@@ -171,6 +186,18 @@ public:
 		}
 		scheduler_->ScheduleRepeat(alias_, it->second.second, std::move(cb_));
 	}
+
+#ifdef SCHEDULER_USE_POOL_ALLOCATOR
+public:
+	void* operator new(size_t) { return pool_.allocate(); }
+	void operator delete(void *p) { pool_.deallocate(static_cast<ECRepeatSchedule<Key, Hash>*>(p)); }
+
+private:
+	void* operator new[](size_t);
+	void operator delete[](void*);
+
+	static boost::fast_pool_allocator<ECRepeatSchedule<Key, Hash>> pool_;
+#endif
 
 private:
 	Scheduler<Key, Hash> *scheduler_;
